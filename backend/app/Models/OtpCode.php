@@ -64,7 +64,7 @@ class OtpCode extends Model
         return self::create([
             'email' => $email,
             'otp_code' => self::generateCode(),
-            'expires_at' => Carbon::now()->addMinutes(10), // OTP valid for 10 minutes
+            'expires_at' => Carbon::now()->addMinutes(5), // OTP valid for 5 minutes
             'is_used' => false
         ]);
     }

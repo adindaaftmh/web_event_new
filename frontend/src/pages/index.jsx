@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./index.css";
 
 export default function Main() {
+  const navigate = useNavigate();
   const BASE_WIDTH = 1740;
   const [scale, setScale] = useState(1);
 
@@ -20,13 +22,13 @@ export default function Main() {
         <div className="w-[1688px] h-[139px] relative overflow-hidden z-[14] mt-px mr-0 mb-0 ml-[20px]">
           <div className="w-[1659px] h-[102px] bg-[#312c51] rounded-[20px] absolute top-[20px] left-[13px] shadow-[10px_10px_4px_0_rgba(0,0,0,0.25)] z-[15]" />
           <div className="w-[645px] h-[56px] bg-[#fff] rounded-[20px] absolute top-[43px] left-[527px] z-[19]" />
-          <div className="w-[135px] h-[51px] rounded-[10px] absolute top-[45px] left-[1355px] z-20">
+          <div className="w-[135px] h-[51px] rounded-[10px] absolute top-[45px] left-[1355px] z-20 cursor-pointer" onClick={() => navigate('/register')}>
             <div className="w-[123px] h-[51px] bg-[#fff] rounded-[10px] border-solid border-[3px] border-[#edc17f] absolute top-0 left-0 shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] z-[21]" />
             <span className="flex h-[31px] justify-start items-start font-['Raleway'] text-[23px] font-semibold leading-[27.002px] text-[#edc17f] absolute top-[12px] left-[25px] text-left whitespace-nowrap z-[22]">
               Daftar
             </span>
           </div>
-          <div className="w-[123px] h-[51px] bg-yellow-400 rounded-[10px] absolute top-[45px] left-[1505px] z-[23] flex items-center justify-center">
+          <div className="w-[123px] h-[51px] bg-yellow-400 rounded-[10px] absolute top-[45px] left-[1505px] z-[23] flex items-center justify-center cursor-pointer" onClick={() => navigate('/login')}>
           <span className="block h-[25px] font-['Raleway'] text-[23px] font-semibold leading-[25px] text-[#fff] relative text-left whitespace-nowrap z-[25] mt-[12px] mr-0 mb-0 ml-[26px]">
              Masuk
             </span> 

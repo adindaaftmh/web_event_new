@@ -13,13 +13,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Call KategoriKegiatanSeeder
+        // Call KategoriKegiatanSeeder and KegiatanSeeder
         $this->call([
             KategoriKegiatanSeeder::class,
+            KegiatanSeeder::class,
         ]);
 
         // Create sample user
         User::create([
+            'nama_lengkap' => 'Admin User',
             'email' => 'admin@example.com',
             'no_handphone' => '081234567890',
             'password' => bcrypt('password'),
