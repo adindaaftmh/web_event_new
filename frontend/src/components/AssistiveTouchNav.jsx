@@ -124,7 +124,7 @@ export default function AssistiveTouchNav() {
         navigate("/");
         setIsOpen(false);
       },
-      color: "hover:bg-blue-500/20",
+      color: "hover:bg-[#4A7FA7]/20",
     },
     {
       id: 2,
@@ -138,7 +138,7 @@ export default function AssistiveTouchNav() {
         navigate("/profile");
         setIsOpen(false);
       },
-      color: "hover:bg-purple-500/20",
+      color: "hover:bg-[#1A3D63]/20",
     },
     {
       id: 3,
@@ -152,7 +152,7 @@ export default function AssistiveTouchNav() {
         navigate("/events");
         setIsOpen(false);
       },
-      color: "hover:bg-green-500/20",
+      color: "hover:bg-[#B3CFE5]/20",
     },
     {
       id: 4,
@@ -166,7 +166,7 @@ export default function AssistiveTouchNav() {
         navigate("/tickets");
         setIsOpen(false);
       },
-      color: "hover:bg-yellow-500/20",
+      color: "hover:bg-[#4A7FA7]/20",
     },
     {
       id: 5,
@@ -181,7 +181,7 @@ export default function AssistiveTouchNav() {
         setIsOpen(false);
       },
       badge: notificationCount,
-      color: "hover:bg-orange-500/20",
+      color: "hover:bg-[#1A3D63]/20",
     },
     {
       id: 6,
@@ -196,7 +196,7 @@ export default function AssistiveTouchNav() {
         navigate("/settings");
         setIsOpen(false);
       },
-      color: "hover:bg-gray-500/20",
+      color: "hover:bg-[#4A7FA7]/20",
     },
     {
       id: 7,
@@ -236,7 +236,7 @@ export default function AssistiveTouchNav() {
           transform: position.y === null ? 'translateY(-50%)' : 'none',
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
-        className={`fixed w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-600/90 via-violet-600/90 to-indigo-600/90 backdrop-blur-xl rounded-full shadow-2xl border-2 border-white/40 flex items-center justify-center text-white z-50 transition-all duration-300 ${
+        className={`fixed w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-[#1A3D63]/90 via-[#4A7FA7]/90 to-[#0A1931]/90 backdrop-blur-xl rounded-full shadow-2xl border-2 border-white/40 flex items-center justify-center text-white z-50 transition-all duration-300 ${
           isOpen ? "scale-110" : "hover:scale-105"
         } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
@@ -249,8 +249,8 @@ export default function AssistiveTouchNav() {
 
         {/* Notification Badge on Bubble */}
         {notificationCount > 0 && (
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
-            <span className="text-white text-xs font-bold">{notificationCount}</span>
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#B3CFE5] rounded-full border-2 border-white flex items-center justify-center shadow-lg">
+            <span className="text-[#0A1931] text-xs font-bold">{notificationCount}</span>
           </div>
         )}
       </button>
@@ -263,14 +263,14 @@ export default function AssistiveTouchNav() {
             left: position.x !== null ? `${Math.max(10, position.x - 336)}px` : 'auto',
             top: position.y !== null ? `${Math.max(10, position.y - 200)}px` : 'auto',
           }}
-          className={`fixed w-72 sm:w-80 bg-gradient-to-br from-purple-900/80 via-violet-900/80 to-indigo-900/80 backdrop-blur-2xl border border-white/30 rounded-3xl shadow-2xl z-40 p-4 sm:p-5 transition-all duration-300 ${
+          className={`fixed w-72 sm:w-80 bg-gradient-to-br from-[#0A1931]/80 via-[#1A3D63]/80 to-[#0A1931]/80 backdrop-blur-2xl border border-white/30 rounded-3xl shadow-2xl z-40 p-4 sm:p-5 transition-all duration-300 ${
             isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
           {/* Menu Header */}
-          <div className="mb-4 pb-3 border-b border-purple-400/30">
+          <div className="mb-4 pb-3 border-b border-[#4A7FA7]/30">
             <h3 className="text-white font-bold text-base sm:text-lg drop-shadow-lg">Menu</h3>
-            <p className="text-purple-200/80 text-xs mt-1 drop-shadow">Event Atraksi Dashboard</p>
+            <p className="text-[#B3CFE5]/80 text-xs mt-1 drop-shadow">Event Atraksi Dashboard</p>
           </div>
 
           {/* Menu Grid */}
@@ -295,8 +295,8 @@ export default function AssistiveTouchNav() {
 
                 {/* Badge for Notification */}
                 {item.badge && item.badge > 0 && (
-                  <div className="absolute -top-2 -right-2 w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow-md">
-                    <span className="text-white text-xs font-bold">{item.badge}</span>
+                  <div className="absolute -top-2 -right-2 w-5 h-5 sm:w-6 sm:h-6 bg-[#B3CFE5] rounded-full border-2 border-white flex items-center justify-center shadow-md">
+                    <span className="text-[#0A1931] text-xs font-bold">{item.badge}</span>
                   </div>
                 )}
               </button>

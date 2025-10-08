@@ -35,8 +35,8 @@ export default function Navbar() {
     <nav
       className={`fixed top-6 left-8 right-8 md:left-12 md:right-12 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-gradient-to-r from-slate-700/70 via-purple-600/70 to-violet-600/70 backdrop-blur-2xl shadow-2xl"
-          : "bg-gradient-to-r from-slate-700/60 via-purple-600/60 to-violet-600/60 backdrop-blur-xl shadow-xl"
+          ? "bg-[#1A3D63]/80 backdrop-blur-2xl shadow-2xl"
+          : "bg-[#1A3D63]/70 backdrop-blur-xl shadow-xl"
       } border border-white/20 rounded-2xl`}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
@@ -109,13 +109,13 @@ export default function Navbar() {
               <>
                 <button
                   onClick={() => navigate("/register")}
-                  className="hidden sm:block px-6 py-2 bg-white/90 rounded-full text-gray-800 text-sm font-semibold hover:bg-white transition-all shadow-md"
+                  className="hidden sm:block px-6 py-2 bg-[#4A7FA7] rounded-full text-white text-sm font-semibold hover:bg-[#4A7FA7]/80 transition-all shadow-md"
                 >
                   Daftar
                 </button>
                 <button
                   onClick={() => navigate("/login")}
-                  className="px-4 sm:px-6 py-2 bg-blue-600 rounded-full text-white text-sm font-bold hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl"
+                  className="px-4 sm:px-6 py-2 bg-[#0A1931] rounded-full text-white text-sm font-bold hover:bg-[#0A1931]/80 transition-all shadow-lg hover:shadow-xl"
                 >
                   Masuk
                 </button>
