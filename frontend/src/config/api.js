@@ -16,9 +16,9 @@ const apiClient = axios.create({
 // Interceptor untuk request
 apiClient.interceptors.request.use(
   (config) => {
-    // Tambahkan token jika ada
+    // Tambahkan token jika ada (untuk authenticated endpoints)
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -36,12 +36,22 @@ apiClient.interceptors.response.use(
   (error) => {
     // Handle error response
     if (error.response?.status === 401) {
-      // Unauthorized - redirect ke login
+      // Unauthorized - hapus token jika ada
       localStorage.removeItem('token');
-      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
+// Instance terpisah untuk file uploads tanpa auth token
+const publicApiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  timeout: 30000,
+});
+
 export default apiClient;
+export { publicApiClient };

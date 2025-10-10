@@ -21,11 +21,15 @@ class Kegiatan extends Model
         'sertifikat_kegiatan',
         'waktu_mulai',
         'waktu_berakhir',
+        'kapasitas_peserta',
+        'harga_tiket',
+        'kontak_panitia',
     ];
 
     protected $casts = [
         'waktu_mulai' => 'datetime',
         'waktu_berakhir' => 'datetime',
+        'harga_tiket' => 'decimal:2',
     ];
 
     /**

@@ -1,76 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useEvents } from '../contexts/EventContext';
+import AssistiveTouchNav from '../components/AssistiveTouchNav';
+import TestimonialScroll from '../components/TestimonialScroll';
+import Navbar from '../components/Navbar';
 import oceanBg from "../assets/ocean.jpg";
-import AssistiveTouchNav from "../components/AssistiveTouchNav";
-import Navbar from "../components/Navbar";
-import { kegiatanService } from "../services/apiService";
+
+
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
+  const { events, loading } = useEvents();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [user, setUser] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [eventsPage, setEventsPage] = useState(0);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '', eventId: '' });
-  const [testimonials, setTestimonials] = useState([
-    {
-      id: 1,
-      name: 'Budi Santoso',
-      role: 'Profesional Pemasaran',
-      avatar: 'https://i.pravatar.cc/100?img=12',
-      rating: 5,
-      review: 'Eventnya sangat informatif dan terstruktur. Saya mendapatkan banyak insight baru untuk kampanye digital di perusahaan.',
-      eventName: 'Workshop Digital Marketing'
-    },
-    {
-      id: 2,
-      name: 'Siti Nurhaliza',
-      role: 'Pemilik UMKM',
-      avatar: 'https://i.pravatar.cc/100?img=5',
-      rating: 5,
-      review: 'Pendaftaran mudah dan materi workshop sangat aplikatif. Tim panitia responsif dan ramah.',
-      eventName: 'Seminar Teknologi AI'
-    },
-    {
-      id: 3,
-      name: 'Andi Wijaya',
-      role: 'Mahasiswa',
-      avatar: 'https://i.pravatar.cc/100?img=3',
-      rating: 4,
-      review: 'Pembicaranya keren-keren. Sesi tanya jawab interaktif banget. Overall sangat worth it!',
-      eventName: 'Konser Musik Akustik'
-    },
-    {
-      id: 4,
-      name: 'Dewi Lestari',
-      role: 'UI/UX Designer',
-      avatar: 'https://i.pravatar.cc/100?img=47',
-      rating: 5,
-      review: 'Workshop desainnya lengkap dari fundamental sampai praktik. Materi dan fasilitator mantap.',
-      eventName: 'Pelatihan Public Speaking'
-    },
-    {
-      id: 5,
-      name: 'Rizky Pratama',
-      role: 'Data Enthusiast',
-      avatar: 'https://i.pravatar.cc/100?img=22',
-      rating: 4,
-      review: 'Webinar data science-nya cocok untuk pemula. Ada rekaman juga jadi bisa dipelajari ulang.',
-      eventName: 'Workshop Digital Marketing'
-    },
-    {
-      id: 6,
-      name: 'Lia Kartika',
-      role: 'Freelancer',
-      avatar: 'https://i.pravatar.cc/100?img=8',
-      rating: 5,
-      review: 'Sangat membantu pengembangan karier saya. Networking di acara juga seru dan bermanfaat.',
-      eventName: 'Seminar Teknologi AI'
-    }
-  ]);
   const EVENTS_PER_PAGE = 4;
   const totalEventPages = Math.ceil(events.length / EVENTS_PER_PAGE) || 0;
   const visibleEvents = events.slice(
@@ -92,58 +37,6 @@ export default function HomePage() {
         ]));
       }
     }
-
-    // Fetch events from API
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        const response = await kegiatanService.getAll();
-        if (response.data.success) {
-          setEvents(response.data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        // Fallback to mock data if API fails
-        setEvents([
-          {
-            id: 1,
-            judul_kegiatan: "Workshop Digital Marketing",
-            lokasi_kegiatan: "Tangerang",
-            waktu_mulai: "2025-07-15T09:00:00",
-            flyer_kegiatan: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200",
-            kategori: { nama_kategori: "Workshop" }
-          },
-          {
-            id: 2,
-            judul_kegiatan: "Seminar Teknologi AI",
-            lokasi_kegiatan: "Tangerang",
-            waktu_mulai: "2025-07-20T13:00:00",
-            flyer_kegiatan: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200",
-            kategori: { nama_kategori: "Seminar" }
-          },
-          {
-            id: 3,
-            judul_kegiatan: "Konser Musik Akustik",
-            lokasi_kegiatan: "Tangerang",
-            waktu_mulai: "2025-07-25T18:00:00",
-            flyer_kegiatan: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200",
-            kategori: { nama_kategori: "Konser" }
-          },
-          {
-            id: 4,
-            judul_kegiatan: "Pelatihan Public Speaking",
-            lokasi_kegiatan: "Tangerang",
-            waktu_mulai: "2025-07-28T10:00:00",
-            flyer_kegiatan: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=1200",
-            kategori: { nama_kategori: "Pelatihan" }
-          }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
   }, []);
 
   // Reset to first page whenever events change
@@ -185,32 +78,23 @@ export default function HomePage() {
     setShowReviewForm(true);
   };
 
-  const handleSubmitReview = () => {
-    if (!newReview.comment.trim() || !newReview.eventId) {
-      alert("Silakan lengkapi semua field");
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!newReview.eventId || !newReview.comment.trim()) {
+      alert('Mohon lengkapi semua field');
       return;
     }
     
-    const selectedEvent = events.find(e => e.id.toString() === newReview.eventId);
-    const reviewData = {
-      id: testimonials.length + 1,
-      name: user.nama_lengkap,
-      role: user.role || 'Peserta Event',
-      avatar: user.avatar || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 50)}`,
-      rating: newReview.rating,
-      review: newReview.comment,
-      eventName: selectedEvent?.judul_kegiatan || 'Event'
-    };
-    
-    setTestimonials(prev => [reviewData, ...prev]);
-    setNewReview({ rating: 5, comment: '', eventId: '' });
-    setShowReviewForm(false);
-    alert("Ulasan berhasil ditambahkan!");
-  };
-
-  const handleCancelReview = () => {
-    setNewReview({ rating: 5, comment: '', eventId: '' });
-    setShowReviewForm(false);
+    try {
+      // Here you would typically submit to an API
+      // For now, just show success message
+      alert('Ulasan berhasil dikirim!');
+      setShowReviewForm(false);
+      setNewReview({ rating: 5, comment: '', eventId: '' });
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Gagal mengirim ulasan. Silakan coba lagi.');
+    }
   };
 
   // Hero slides
@@ -950,91 +834,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Ulasan Pengguna Section - Horizontal Scroll */}
+      {/* Testimonial Section - Infinite Scroll */}
       <div className="relative py-16 overflow-hidden">
         {/* Background - Color Theme */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-50/20 to-purple-100/30"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Title with Add Review Button */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#0A1931] mb-3">
-              Ulasan Pengguna
-            </h2>
-            <div className="w-56 h-1 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] rounded-full mx-auto mb-3 animate-slide-line"></div>
-            <p className="text-[#4A7FA7] mb-6">Cerita pengalaman dari pengguna Event Atraksi</p>
-            
-            {/* Add Review Button */}
-            <button
-              onClick={handleAddReview}
-              className="px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-full shadow-lg hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 transform hover:scale-105 flex items-center gap-2 mx-auto"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Tambah Ulasan
-            </button>
-          </div>
-
-          {/* Horizontal Scrolling Testimonials */}
-          <div className="relative">
-            <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {testimonials.map((testimonial, index) => (
-                <div
-                  key={testimonial.id}
-                  className="flex-shrink-0 w-80 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg border border-[#4A7FA7]/20 p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                  style={{
-                    animationDelay: `${index * 0.1}s`,
-                    animation: 'fadeInUp 0.6s ease-out forwards'
-                  }}
-                >
-                  {/* Event Badge */}
-                  <div className="mb-3">
-                    <span className="inline-block px-3 py-1 bg-[#B3CFE5] text-[#0A1931] text-xs font-semibold rounded-full">
-                      {testimonial.eventName}
-                    </span>
-                  </div>
-                  
-                  {/* User Info */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <img src={testimonial.avatar} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#4A7FA7]/20" loading="lazy" />
-                    <div>
-                      <h4 className="font-semibold text-[#0A1931]">{testimonial.name}</h4>
-                      <p className="text-xs text-[#4A7FA7]">{testimonial.role}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-3">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <svg key={idx} className={`w-4 h-4 ${idx < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'} fill-current`} viewBox="0 0 20 20">
-                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                      </svg>
-                    ))}
-                  </div>
-                  
-                  {/* Review Text */}
-                  <p className="text-[#0A1931] leading-relaxed text-sm">"{testimonial.review}"</p>
-                </div>
-              ))}
-            </div>
-            
-            {/* Scroll Indicators */}
-            <div className="flex justify-center gap-2 mt-6">
-              {Array.from({ length: Math.ceil(testimonials.length / 3) }).map((_, i) => (
-                <div key={i} className="w-2 h-2 bg-[#4A7FA7]/30 rounded-full"></div>
-              ))}
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="text-center mt-10">
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="px-6 py-2 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-full shadow hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-colors"
-            >
-              Lihat Event Populer
-            </button>
-          </div>
+          <TestimonialScroll />
         </div>
       </div>
 

@@ -2,11 +2,12 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KategoriKegiatanController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\DaftarHadirController;
 use App\Http\Controllers\OtpController;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TestimonialController;
 
 
 
@@ -26,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
     Route::post('logout', [AuthController::class, 'logout']);
+    Route::post('update-profile', [AuthController::class, 'updateProfile']);
 });
 
 // Kategori Kegiatan Routes
@@ -42,4 +44,19 @@ Route::post('daftar-hadir/absen', [DaftarHadirController::class, 'absen']);
 Route::get('kegiatan-by-kategori/{kategori_id}', [KegiatanController::class, 'getByKategori']);
 Route::get('daftar-hadir-by-kegiatan/{kegiatan_id}', [DaftarHadirController::class, 'getByKegiatan']);
 Route::get('daftar-hadir-by-user/{user_id}', [DaftarHadirController::class, 'getByUser']);
+
+// Testimonial Routes (Public - hanya approved testimonials)
+Route::get('testimonials', [TestimonialController::class, 'index']);
+Route::get('testimonials/{testimonial}', [TestimonialController::class, 'show']);
+
+// Protected Testimonial Routes (Authenticated users)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('testimonials', [TestimonialController::class, 'store']);
+    Route::put('testimonials/{testimonial}', [TestimonialController::class, 'update']);
+    Route::delete('testimonials/{testimonial}', [TestimonialController::class, 'destroy']);
+
+    // Admin only routes for approval
+    Route::patch('testimonials/{testimonial}/approve', [TestimonialController::class, 'approve']);
+    Route::patch('testimonials/{testimonial}/reject', [TestimonialController::class, 'reject']);
+});
     

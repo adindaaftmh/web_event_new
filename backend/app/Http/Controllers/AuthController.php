@@ -266,4 +266,65 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update user profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama_lengkap' => 'sometimes|required|string|max:255',
+            'no_handphone' => 'sometimes|required|string|max:20',
+            'alamat' => 'sometimes|required|string|max:500',
+            'pendidikan_terakhir' => 'sometimes|required|string|in:SMA,D3,S1,S2,S3'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = $request->user();
+
+            // Update only provided fields
+            if ($request->has('nama_lengkap')) {
+                $user->nama_lengkap = $request->nama_lengkap;
+            }
+            if ($request->has('no_handphone')) {
+                $user->no_handphone = $request->no_handphone;
+            }
+            if ($request->has('alamat')) {
+                $user->alamat = $request->alamat;
+            }
+            if ($request->has('pendidikan_terakhir')) {
+                $user->pendidikan_terakhir = $request->pendidikan_terakhir;
+            }
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profil berhasil diperbarui',
+                'data' => [
+                    'id' => $user->id,
+                    'nama_lengkap' => $user->nama_lengkap,
+                    'email' => $user->email,
+                    'no_handphone' => $user->no_handphone,
+                    'alamat' => $user->alamat,
+                    'pendidikan_terakhir' => $user->pendidikan_terakhir
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Update profil gagal',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
