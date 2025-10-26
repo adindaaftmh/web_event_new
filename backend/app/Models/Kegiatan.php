@@ -24,6 +24,8 @@ class Kegiatan extends Model
         'kapasitas_peserta',
         'harga_tiket',
         'kontak_panitia',
+        'tipe_peserta',
+        'tickets',
     ];
 
     protected $casts = [
@@ -31,6 +33,30 @@ class Kegiatan extends Model
         'waktu_berakhir' => 'datetime',
         'harga_tiket' => 'decimal:2',
     ];
+
+    protected $appends = ['flyer_url', 'sertifikat_url'];
+
+    /**
+     * Get the full URL for the flyer image.
+     */
+    public function getFlyerUrlAttribute()
+    {
+        if ($this->flyer_kegiatan) {
+            return url('storage/' . $this->flyer_kegiatan);
+        }
+        return null;
+    }
+
+    /**
+     * Get the full URL for the certificate template.
+     */
+    public function getSertifikatUrlAttribute()
+    {
+        if ($this->sertifikat_kegiatan) {
+            return url('storage/' . $this->sertifikat_kegiatan);
+        }
+        return null;
+    }
 
     /**
      * Get the category that owns the activity.

@@ -12,7 +12,9 @@ export default function AdminDashboard() {
     totalEvents: 0,
     totalParticipants: 0,
     activeEvents: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    adminIncome: 0,
+    organizerIncome: 0
   });
 
   useEffect(() => {
@@ -27,8 +29,18 @@ export default function AdminDashboard() {
     const totalParticipants = events.reduce((sum, event) =>
       sum + (event.kapasitas_peserta === 'unlimited' ? 0 : parseInt(event.kapasitas_peserta) || 0), 0);
     const activeEvents = events.filter(event => new Date(event.waktu_selesai || event.waktu_mulai) > new Date()).length;
-    const totalRevenue = events.reduce((sum, event) =>
-      sum + (event.isFree ? 0 : parseFloat(event.harga_tiket) || 0), 0);
+    
+    // Calculate revenue
+    const totalRevenue = events.reduce((sum, event) => {
+      const harga = parseFloat(event.harga_tiket) || 0;
+      return sum + harga;
+    }, 0);
+    
+    // Calculate admin income (10% commission)
+    const adminIncome = totalRevenue * 0.1;
+    
+    // Calculate organizer income (90%)
+    const organizerIncome = totalRevenue * 0.9;
 
     // Generate monthly stats (mock data for now, bisa diganti dengan data real dari API)
     const monthlyStats = [
@@ -81,7 +93,9 @@ export default function AdminDashboard() {
       totalEvents,
       totalParticipants,
       activeEvents,
-      totalRevenue
+      totalRevenue,
+      adminIncome,
+      organizerIncome
     });
   };
 
@@ -124,8 +138,8 @@ export default function AdminDashboard() {
     },
     {
       id: 4,
-      title: "Revenue",
-      value: `Rp ${dashboardData.totalRevenue.toLocaleString()}`,
+      title: "Total Revenue",
+      value: `Rp ${dashboardData.totalRevenue.toLocaleString('id-ID')}`,
       change: "+15.8%",
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,6 +147,32 @@ export default function AdminDashboard() {
         </svg>
       ),
       color: "from-[#4A7FA7] to-[#0A1931]"
+    },
+    {
+      id: 5,
+      title: "Pendapatan Admin",
+      value: `Rp ${dashboardData.adminIncome.toLocaleString('id-ID')}`,
+      change: "+15.8%",
+      subtitle: "Komisi 10%",
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      color: "from-green-500 to-green-600"
+    },
+    {
+      id: 6,
+      title: "Pendapatan Panitia",
+      value: `Rp ${dashboardData.organizerIncome.toLocaleString('id-ID')}`,
+      change: "+15.8%",
+      subtitle: "Total 90%",
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      color: "from-blue-500 to-blue-600"
     }
   ];
 
@@ -181,15 +221,18 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.map((stat) => (
             <div key={stat.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group hover:scale-105 h-full">
               <div className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <p className="text-[#4A7FA7] text-sm font-semibold">{stat.title}</p>
-                    <h3 className="text-2xl lg:text-3xl font-bold text-[#0A1931]">{stat.value}</h3>
-                    <p className="text-green-600 text-xs lg:text-sm font-semibold">{stat.change}</p>
+                    {stat.subtitle && (
+                      <p className="text-xs text-gray-500 font-medium">{stat.subtitle}</p>
+                    )}
+                    <h3 className="text-xl lg:text-2xl font-bold text-[#0A1931]">{stat.value}</h3>
+                    <p className="text-green-600 text-xs font-semibold">{stat.change}</p>
                   </div>
                   <div className={`w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     {stat.icon}

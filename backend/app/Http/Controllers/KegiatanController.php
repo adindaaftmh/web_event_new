@@ -41,16 +41,36 @@ class KegiatanController extends Controller
             'deskripsi_kegiatan' => 'required|string',
             'lokasi_kegiatan' => 'required|string|max:255',
             'flyer_kegiatan' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'waktu_mulai' => 'required|date',
+            'sertifikat_kegiatan' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf|max:5120',
+            'waktu_mulai' => 'required|date|after:now',
             'waktu_selesai' => 'nullable|date|after:waktu_mulai',
             'kapasitas_peserta' => 'nullable|integer|min:1',
             'harga_tiket' => 'nullable|numeric|min:0',
             'kontak_panitia' => 'nullable|string|max:255',
+            'tipe_peserta' => 'nullable|string|in:individu,tim',
+            'tickets' => 'nullable|string',
         ]);
+
+        // Validate H-3 rule: admin can only create events max 3 days before event date
+        $eventDate = \Carbon\Carbon::parse($request->waktu_mulai);
+        $now = \Carbon\Carbon::now();
+        $minDate = $now->copy()->addDays(3); // H-3
+
+        if ($eventDate->lessThan($minDate)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kegiatan hanya dapat dibuat maksimal H-3 dari tanggal pelaksanaan. Event pada ' . $eventDate->format('d M Y') . ' dapat dibuat mulai ' . $minDate->format('d M Y')
+            ], 422);
+        }
 
         $flyerPath = null;
         if ($request->hasFile('flyer_kegiatan')) {
             $flyerPath = $request->file('flyer_kegiatan')->store('flyers', 'public');
+        }
+
+        $sertifikatPath = null;
+        if ($request->hasFile('sertifikat_kegiatan')) {
+            $sertifikatPath = $request->file('sertifikat_kegiatan')->store('certificates', 'public');
         }
 
         // Find kategori_id by nama_kategori
@@ -63,11 +83,14 @@ class KegiatanController extends Controller
             'deskripsi_kegiatan' => $request->deskripsi_kegiatan,
             'lokasi_kegiatan' => $request->lokasi_kegiatan,
             'flyer_kegiatan' => $flyerPath,
+            'sertifikat_kegiatan' => $sertifikatPath,
             'waktu_mulai' => $request->waktu_mulai,
             'waktu_berakhir' => $request->waktu_selesai,
             'kapasitas_peserta' => $request->kapasitas_peserta,
             'harga_tiket' => $request->harga_tiket,
             'kontak_panitia' => $request->kontak_panitia,
+            'tipe_peserta' => $request->tipe_peserta ?? 'individu',
+            'tickets' => $request->tickets,
         ]);
 
         return response()->json([
@@ -204,6 +227,39 @@ class KegiatanController extends Controller
         return response()->json([
             'success' => true,
             'data' => $kegiatan
+        ]);
+    }
+
+    /**
+     * Search activities by keyword
+     */
+    public function search(Request $request)
+    {
+        $keyword = $request->query('q');
+
+        if (!$keyword) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kata kunci pencarian diperlukan'
+            ], 400);
+        }
+
+        $kegiatan = Kegiatan::with('kategori')
+            ->where('judul_kegiatan', 'LIKE', "%{$keyword}%")
+            ->orWhere('deskripsi_kegiatan', 'LIKE', "%{$keyword}%")
+            ->orWhere('lokasi_kegiatan', 'LIKE', "%{$keyword}%")
+            ->orWhereHas('kategori', function ($query) use ($keyword) {
+                $query->where('nama_kategori', 'LIKE', "%{$keyword}%");
+            })
+            ->where('waktu_mulai', '>', now()) // Only show future events
+            ->orderBy('waktu_mulai', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $kegiatan,
+            'count' => $kegiatan->count(),
+            'keyword' => $keyword
         ]);
     }
 }

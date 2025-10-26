@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import AssistiveTouchNav from "../components/AssistiveTouchNav";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { kegiatanService } from "../services/apiService";
+import oceanBg from "../assets/ocean.jpg";
 
 export default function EventData() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [events, setEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [animatedCounts, setAnimatedCounts] = useState({});
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -29,8 +35,113 @@ export default function EventData() {
     fetchEvents();
   }, []);
 
+  // Filter and sort events
+  useEffect(() => {
+    let filtered = [...events];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(event =>
+        event.judul_kegiatan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.lokasi_kegiatan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.kategori?.nama_kategori?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(event =>
+        event.kategori?.nama_kategori?.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case "newest":
+        filtered.sort((a, b) => new Date(b.waktu_mulai || 0) - new Date(a.waktu_mulai || 0));
+        break;
+      case "oldest":
+        filtered.sort((a, b) => new Date(a.waktu_mulai || 0) - new Date(b.waktu_mulai || 0));
+        break;
+      case "name":
+        filtered.sort((a, b) => (a.judul_kegiatan || "").localeCompare(b.judul_kegiatan || ""));
+        break;
+      case "popular":
+        // Simulate popularity based on random participant count
+        filtered.sort((a, b) => {
+          const aParticipants = a.peserta || Math.floor(Math.random() * 200) + 50;
+          const bParticipants = b.peserta || Math.floor(Math.random() * 200) + 50;
+          return bParticipants - aParticipants;
+        });
+        break;
+      default:
+        break;
+    }
+
+    setFilteredEvents(filtered);
+  }, [events, searchQuery, selectedCategory, sortBy]);
+
+  // Get unique categories
+  const categories = [...new Set(events.map(event => event.kategori?.nama_kategori).filter(Boolean))];
+
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return "TBA";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  // Animate participant count for visible events
+  useEffect(() => {
+    filteredEvents.forEach((event) => {
+      const targetCount = event.peserta || event.participants || Math.floor(Math.random() * 150) + 50;
+      const countKey = `event-${event.id}`;
+      
+      if (animatedCounts[countKey] === undefined) {
+        let startTime = null;
+        const duration = 2000;
+        
+        const animate = (currentTime) => {
+          if (!startTime) startTime = currentTime;
+          const progress = Math.min((currentTime - startTime) / duration, 1);
+          
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+          const currentCount = Math.floor(targetCount * easeOut);
+          
+          setAnimatedCounts(prev => ({
+            ...prev,
+            [countKey]: currentCount
+          }));
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        };
+        
+        requestAnimationFrame(animate);
+      }
+    });
+  }, [filteredEvents]);
+
+  // Scroll to section function for navbar
+  const scrollToSection = (sectionId) => {
+    // If we're not on homepage, navigate to homepage first
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: sectionId } });
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 overflow-hidden">
+    <>
       {/* Animated Background Accent - Glassmorphism Theme with Bubbles */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         {/* Large Blur Blobs - Gradient Theme */}
@@ -74,28 +185,166 @@ export default function EventData() {
         .animate-float {
           animation: float 8s ease-in-out infinite;
         }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.8s ease-out;
+        }
       `}</style>
 
-      <Navbar />
+      <div className="min-h-screen relative">
+        <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-[#0A1931]">Semua Event</h1>
-          <button
-            onClick={() => navigate("/")}
-            className="px-4 py-2 bg-[#F6FAFD]/90 backdrop-blur-xl text-[#0A1931] rounded-full shadow border border-white/20 hover:bg-[#F6FAFD] transition-all"
-          >
-            Kembali ke Beranda
-          </button>
+        {/* Hero Section with Ocean Background */}
+        <div 
+          className="relative h-[50vh] bg-cover bg-center bg-no-repeat pt-24"
+          style={{ backgroundImage: `url(${oceanBg})` }}
+        >
+          {/* Overlay - No Blur */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/60 via-indigo-800/50 to-purple-900/60"></div>
+          
+          {/* Content */}
+          <div className="relative z-10 h-full flex items-center justify-center text-center px-4 pb-16">
+            <div className="animate-fade-in">
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 drop-shadow-2xl">
+                Semua Event
+              </h1>
+              <p className="text-lg md:text-xl text-white/95 max-w-2xl mx-auto drop-shadow-lg mb-6">
+                Temukan berbagai event menarik yang sesuai dengan minat dan passion Anda
+              </p>
+              
+              <div className="flex items-center justify-center gap-2 text-white/90">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-semibold drop-shadow">
+                  {loading ? "Memuat event..." : `${events.length} Event Tersedia`}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12">
+        {/* Search and Filter Section */}
+        <div className="mb-8 -mt-20 relative z-30">
+          <div className="relative bg-white/95 backdrop-blur-2xl rounded-2xl border-2 border-[#4A7FA7]/20 shadow-xl p-6 mb-8 overflow-hidden">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#4A7FA7]/10 to-[#1A3D63]/5 rounded-full blur-2xl -translate-y-8 translate-x-8"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#B3CFE5]/15 to-[#4A7FA7]/10 rounded-full blur-xl translate-y-4 -translate-x-4"></div>
+            
+            {/* Header */}
+            <div className="relative z-10 mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-lg flex items-center justify-center shadow-md">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-bold text-[#0A1931]">Cari & Filter Event</h2>
+              </div>
+              <p className="text-[#4A7FA7] text-xs ml-10">Temukan event yang sesuai dengan preferensi Anda</p>
+            </div>
+
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Search Bar */}
+              <div className="relative group">
+                <label className="block text-xs font-semibold text-[#0A1931] mb-1">Pencarian</label>
+                <input
+                  type="text"
+                  placeholder="Cari event, lokasi, atau kategori..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#4A7FA7] focus:ring-2 focus:ring-[#4A7FA7]/10 transition-all duration-300 shadow-sm hover:shadow-md group-hover:border-[#4A7FA7]/40"
+                />
+                <svg className="w-4 h-4 text-[#4A7FA7] absolute left-3 top-[42px] -translate-y-1/2 group-focus-within:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              {/* Category Filter */}
+              <div className="relative group">
+                <label className="block text-xs font-semibold text-[#0A1931] mb-1">Kategori</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full pl-4 pr-10 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-gray-700 focus:outline-none focus:border-[#4A7FA7] focus:ring-2 focus:ring-[#4A7FA7]/10 transition-all duration-300 shadow-sm hover:shadow-md appearance-none cursor-pointer group-hover:border-[#4A7FA7]/40"
+                >
+                  <option value="all">Semua Kategori</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <svg className="w-4 h-4 text-[#4A7FA7] absolute right-3 top-[42px] -translate-y-1/2 pointer-events-none group-focus-within:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
+              {/* Sort Options */}
+              <div className="relative group">
+                <label className="block text-xs font-semibold text-[#0A1931] mb-1">Urutkan</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full pl-4 pr-10 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-gray-700 focus:outline-none focus:border-[#4A7FA7] focus:ring-2 focus:ring-[#4A7FA7]/10 transition-all duration-300 shadow-sm hover:shadow-md appearance-none cursor-pointer group-hover:border-[#4A7FA7]/40"
+                >
+                  <option value="newest">Terbaru</option>
+                  <option value="oldest">Terlama</option>
+                  <option value="name">Nama A-Z</option>
+                  <option value="popular">Terpopuler</option>
+                </select>
+                <svg className="w-4 h-4 text-[#4A7FA7] absolute right-3 top-[42px] -translate-y-1/2 pointer-events-none group-focus-within:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Results Count & Reset Button */}
+            <div className="relative z-10 mt-4 pt-4 border-t border-[#4A7FA7]/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-[#4A7FA7] rounded-full animate-pulse"></div>
+                <p className="text-[#4A7FA7] font-medium">
+                  {loading ? "Memuat..." : `Menampilkan ${filteredEvents.length} dari ${events.length} event`}
+                </p>
+              </div>
+              
+              {(searchQuery || selectedCategory !== "all" || sortBy !== "newest") && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("all");
+                    setSortBy("newest");
+                  }}
+                  className="px-4 py-2 bg-[#4A7FA7]/10 hover:bg-[#4A7FA7]/20 text-[#4A7FA7] rounded-xl transition-all duration-200 text-sm font-semibold flex items-center gap-2 hover:scale-105"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reset Filter
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Loading State */}
         {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow animate-pulse">
-                <div className="h-48 bg-[#4A7FA7]/20" />
-                <div className="p-4">
-                  <div className="h-4 bg-[#4A7FA7]/20 rounded mb-2" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg animate-pulse">
+                <div className="h-56 bg-[#4A7FA7]/20" />
+                <div className="p-6">
+                  <div className="h-3 bg-[#4A7FA7]/20 rounded mb-3 w-1/3" />
+                  <div className="h-5 bg-[#4A7FA7]/20 rounded mb-3" />
+                  <div className="h-4 bg-[#4A7FA7]/20 rounded mb-2 w-3/4" />
                   <div className="h-4 bg-[#4A7FA7]/20 rounded w-1/2" />
                 </div>
               </div>
@@ -103,57 +352,196 @@ export default function EventData() {
           </div>
         )}
 
+        {/* Error State */}
         {!loading && error && (
-          <div className="text-center text-red-600 font-semibold">{error}</div>
-        )}
-
-        {!loading && !error && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                onClick={() => navigate(`/event/${event.id}`)}
-                className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all hover:border-[#4A7FA7] hover:ring-2 hover:ring-[#4A7FA7]/50"
+          <div className="text-center py-12">
+            <div className="bg-red-50/80 backdrop-blur-xl rounded-2xl border border-red-200/50 p-8 max-w-md mx-auto">
+              <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Terjadi Kesalahan</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
-                <div className="relative h-48 bg-gradient-to-br from-[#1A3D63] via-[#4A7FA7] to-[#0A1931] overflow-hidden">
-                  {event.flyer_kegiatan && (
-                    <img
-                      src={event.flyer_kegiatan}
-                      alt={event.judul_kegiatan}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/10" />
-                  <div className="absolute top-3 right-3">
-                    <span className="px-3 py-1 bg-[#B3CFE5] text-[#0A1931] text-xs font-bold rounded-full shadow">Tersedia</span>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="text-xs text-[#4A7FA7] mb-1">
-                    {event.kategori?.nama_kategori || "Event"}
-                  </div>
-                  <h3 className="text-lg font-bold text-[#0A1931] line-clamp-2 mb-2">
-                    {event.judul_kegiatan}
-                  </h3>
-                  <div className="flex items-center gap-2 text-[#4A7FA7] text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>{event.lokasi_kegiatan || "TBA"}</span>
-                  </div>
-                  <div className="mt-2 text-sm text-[#4A7FA7]">
-                    {event.waktu_mulai ? new Date(event.waktu_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "Tanggal menyusul"}
-                  </div>
-                </div>
-              </div>
-            ))}
+                Coba Lagi
+              </button>
+            </div>
           </div>
         )}
-      </div>
 
-      <AssistiveTouchNav />
-    </div>
+        {/* Events Grid */}
+        {!loading && !error && (
+          <>
+            {filteredEvents.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredEvents.map((event, index) => (
+                  <div
+                    key={event.id}
+                    onClick={() => navigate(`/event/${event.id}`)}
+                    className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg transition-all duration-500 ease-in-out cursor-pointer group animate-fade-in-up transform hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-[#4A7FA7]/30 hover:border-[#4A7FA7] hover:ring-2 hover:ring-[#4A7FA7]/50"
+                    style={{
+                      animationDelay: `${index * 0.15}s`,
+                      animationFillMode: 'both',
+                      willChange: 'transform, box-shadow'
+                    }}
+                  >
+                    {/* Flyer Image Area */}
+                    <div className="relative h-56 bg-gradient-to-br from-[#1A3D63] via-[#4A7FA7] to-[#0A1931] flex items-center justify-center overflow-hidden group-hover:from-[#4A7FA7] group-hover:via-[#1A3D63] group-hover:to-[#0A1931] transition-all duration-500">
+                      {(() => {
+                        // Handle flyer URL - check multiple possible fields
+                        let flyerSrc = null;
+                        if (event.flyer_url) {
+                          flyerSrc = event.flyer_url;
+                        } else if (event.flyer_kegiatan) {
+                          // Check if it's already a full URL
+                          if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
+                            flyerSrc = event.flyer_kegiatan;
+                          } else {
+                            // Prepend storage path for relative paths
+                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
+                          }
+                        }
+
+                        return flyerSrc ? (
+                          <img
+                            src={flyerSrc}
+                            alt={event.judul_kegiatan}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Hide broken image and show placeholder
+                              e.target.style.display = 'none';
+                              const placeholder = e.target.parentElement.querySelector('.flyer-placeholder');
+                              if (placeholder) placeholder.style.display = 'flex';
+                            }}
+                          />
+                        ) : null;
+                      })()}
+                      <div className="flyer-placeholder absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110" style={{ display: event.flyer_kegiatan ? 'none' : 'flex' }}>
+                        <p className="absolute inset-0 flex items-center justify-center text-white/40 text-2xl font-bold group-hover:scale-110 transition-transform duration-500">Flyer</p>
+                      </div>
+                      <div className="absolute inset-0 bg-black/10" />
+                      {/* Status Badge */}
+                      <div className="absolute top-3 right-3">
+                        <span className="px-3 py-1 bg-[#B3CFE5] text-[#0A1931] text-xs font-bold rounded-full shadow-md">
+                          Tersedia
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Event Info */}
+                    <div className="p-4 bg-[#F6FAFD]/90 backdrop-blur-xl flex flex-col">
+                      {/* Location */}
+                      <div className="flex items-center gap-2 text-[#4A7FA7] text-sm mb-2">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="truncate">{event.lokasi_kegiatan}</span>
+                      </div>
+
+                      {/* Date */}
+                      <div className="flex items-center gap-2 text-[#4A7FA7] text-sm mb-3">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{formatDate(event.waktu_mulai)}</span>
+                      </div>
+
+                      {/* Event Title - Fixed height */}
+                      <h3 className="text-[#0A1931] font-bold text-lg mb-2 group-hover:text-[#4A7FA7] transition-colors duration-300 line-clamp-2 min-h-[3.5rem]">
+                        {event.judul_kegiatan}
+                      </h3>
+
+                      {/* Event Description */}
+                      <p className="text-[#4A7FA7]/80 text-sm mb-2 line-clamp-2 min-h-[2.5rem]">
+                        {event.deskripsi_kegiatan || 'Event menarik yang tidak boleh dilewatkan. Segera daftarkan diri Anda!'}
+                      </p>
+
+                      {/* Participant Count with Animation */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <svg className="w-4 h-4 text-[#4A7FA7]" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                        </svg>
+                        <span className="text-[#4A7FA7] text-sm font-semibold">
+                          {animatedCounts[`event-${event.id}`] || 0} peserta
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      {(() => {
+                          // Get price from harga_tiket field
+                          const hargaTiket = event.harga_tiket;
+                          
+                          // Parse and validate price
+                          let price = 0;
+                          if (hargaTiket !== null && hargaTiket !== undefined && hargaTiket !== '') {
+                            price = typeof hargaTiket === 'string' 
+                              ? parseFloat(hargaTiket.replace(/[^0-9.]/g, '')) 
+                              : parseFloat(hargaTiket);
+                            price = isNaN(price) ? 0 : price;
+                          }
+                          
+                          // Show price if > 0, otherwise show GRATIS
+                          if (price > 0) {
+                            return (
+                              <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 -mx-4 -mb-4 px-4 py-3 border-t border-green-100">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-600 text-xs font-medium">Harga Mulai Dari</span>
+                                </div>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-green-600 font-bold text-lg tracking-tight">
+                                    Rp {price.toLocaleString('id-ID')}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          // Free event
+                          return (
+                            <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 -mx-4 -mb-4 px-4 py-3 border-t border-green-100">
+                              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-green-600 font-bold text-lg">GRATIS</span>
+                            </div>
+                          );
+                        })()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Empty State */
+              <div className="text-center py-16">
+                <div className="bg-[#F6FAFD]/80 backdrop-blur-xl rounded-2xl border border-white/20 p-12 max-w-lg mx-auto">
+                  <svg className="w-20 h-20 text-[#4A7FA7]/50 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <h3 className="text-2xl font-bold text-[#0A1931] mb-3">Tidak Ada Event Ditemukan</h3>
+                  <p className="text-[#4A7FA7] mb-6">
+                    Coba ubah kata kunci pencarian atau filter kategori Anda
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedCategory("all");
+                      setSortBy("newest");
+                    }}
+                    className="px-6 py-3 bg-[#4A7FA7] text-white rounded-xl hover:bg-[#4A7FA7]/90 transition-colors duration-300 font-semibold"
+                  >
+                    Reset Filter
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      </div>
+    </>
   );
 }

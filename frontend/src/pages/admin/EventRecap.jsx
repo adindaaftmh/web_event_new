@@ -7,17 +7,30 @@ export default function EventRecap() {
   const { events } = useEvents();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly' or 'yearly'
 
   // Calculate event statistics
   const stats = useMemo(() => {
     const filteredEvents = events.filter(event => {
       const eventDate = new Date(event.waktu_mulai);
-      return eventDate.getMonth() + 1 === selectedMonth && eventDate.getFullYear() === selectedYear;
+      if (viewMode === 'yearly') {
+        return eventDate.getFullYear() === selectedYear;
+      } else {
+        return eventDate.getMonth() + 1 === selectedMonth && eventDate.getFullYear() === selectedYear;
+      }
     });
 
     const totalEvents = filteredEvents.length;
     const completedEvents = filteredEvents.filter(e => new Date(e.waktu_mulai) < new Date()).length;
     const upcomingEvents = filteredEvents.filter(e => new Date(e.waktu_mulai) >= new Date()).length;
+
+    // Revenue calculations
+    const totalRevenue = filteredEvents.reduce((sum, event) => {
+      const harga = parseFloat(event.harga_tiket) || 0;
+      return sum + harga;
+    }, 0);
+    const adminIncome = totalRevenue * 0.1; // 10% commission
+    const organizerIncome = totalRevenue * 0.9; // 90% for organizer
 
     // Category statistics
     const categoryStats = filteredEvents.reduce((acc, event) => {
@@ -43,21 +56,32 @@ export default function EventRecap() {
       totalEvents,
       completedEvents,
       upcomingEvents,
+      totalRevenue,
+      adminIncome,
+      organizerIncome,
       categoryStats,
       monthlyTrend,
       filteredEvents
     };
-  }, [events, selectedMonth, selectedYear]);
+  }, [events, selectedMonth, selectedYear, viewMode]);
 
   const exportRecap = () => {
     const csvContent = "data:text/csv;charset=utf-8,"
-      + "ID,Judul Kegiatan,Lokasi,Tanggal,Waktu,Kategori,Kapasitas,Harga,Status\n"
-      + stats.filteredEvents.map(e => `${e.id},"${e.judul_kegiatan}",${e.lokasi_kegiatan},${new Date(e.waktu_mulai).toLocaleDateString()},${new Date(e.waktu_mulai).toLocaleTimeString()},${e.kategori?.nama_kategori || ''},${e.kapasitas_peserta || ''},${e.harga_tiket || ''},${new Date(e.waktu_mulai) < new Date() ? 'Selesai' : 'Akan Datang'}`).join("\n");
+      + "ID,Judul Kegiatan,Lokasi,Tanggal,Waktu,Kategori,Kapasitas,Harga,Komisi Admin (10%),Diterima Panitia (90%),Status\n"
+      + stats.filteredEvents.map(e => {
+        const harga = parseFloat(e.harga_tiket) || 0;
+        const komisi = harga * 0.1;
+        const diterimaPanitia = harga * 0.9;
+        return `${e.id},"${e.judul_kegiatan}",${e.lokasi_kegiatan},${new Date(e.waktu_mulai).toLocaleDateString()},${new Date(e.waktu_mulai).toLocaleTimeString()},${e.kategori?.nama_kategori || ''},${e.kapasitas_peserta || ''},${harga},${komisi},${diterimaPanitia},${new Date(e.waktu_mulai) < new Date() ? 'Selesai' : 'Akan Datang'}`;
+      }).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `rekap_kegiatan_${selectedMonth}_${selectedYear}.csv`);
+    const filename = viewMode === 'yearly' 
+      ? `rekap_kegiatan_${selectedYear}.csv`
+      : `rekap_kegiatan_${selectedMonth}_${selectedYear}.csv`;
+    link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -88,7 +112,9 @@ export default function EventRecap() {
             </div>
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold text-[#0A1931] mb-2">Rekap Kegiatan</h1>
-              <p className="text-[#4A7FA7] text-sm lg:text-base">Statistik dan analisis kegiatan per bulan</p>
+              <p className="text-[#4A7FA7] text-sm lg:text-base">
+                {viewMode === 'yearly' ? 'Statistik dan analisis kegiatan setahun penuh' : 'Statistik dan analisis kegiatan per bulan'}
+              </p>
               <div className="h-1 w-32 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] rounded-full mt-2 animate-pulse"></div>
             </div>
           </div>
@@ -105,6 +131,30 @@ export default function EventRecap() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-[#0A1931] mb-3">Tampilan Data</label>
+            <div className="flex gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  checked={viewMode === 'monthly'}
+                  onChange={() => setViewMode('monthly')}
+                  className="w-4 h-4 text-[#4A7FA7] border-gray-300 focus:ring-[#4A7FA7]"
+                />
+                <span className="ml-2 text-sm text-[#0A1931] font-medium">Per Bulan</span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  checked={viewMode === 'yearly'}
+                  onChange={() => setViewMode('yearly')}
+                  className="w-4 h-4 text-[#4A7FA7] border-gray-300 focus:ring-[#4A7FA7]"
+                />
+                <span className="ml-2 text-sm text-[#0A1931] font-medium">Setahun Penuh</span>
+              </label>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-[#0A1931] mb-2">Tahun</label>
@@ -119,24 +169,28 @@ export default function EventRecap() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-[#0A1931] mb-2">Bulan</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                  <option key={month} value={month}>
-                    {new Date(selectedYear, month - 1).toLocaleDateString('id-ID', { month: 'long' })}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {viewMode === 'monthly' && (
+              <div>
+                <label className="block text-sm font-semibold text-[#0A1931] mb-2">Bulan</label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>
+                      {new Date(selectedYear, month - 1).toLocaleDateString('id-ID', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex items-end">
               <div className="w-full text-center p-4 bg-[#4A7FA7]/10 rounded-lg border border-[#4A7FA7]/30">
-                <p className="text-sm text-[#4A7FA7] mb-1">Total Kegiatan Bulan Ini</p>
+                <p className="text-sm text-[#4A7FA7] mb-1">
+                  {viewMode === 'yearly' ? `Total Kegiatan Tahun ${selectedYear}` : 'Total Kegiatan Bulan Ini'}
+                </p>
                 <p className="text-2xl font-bold text-[#0A1931]">{stats.totalEvents}</p>
               </div>
             </div>
@@ -150,7 +204,9 @@ export default function EventRecap() {
               <div>
                 <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Total Kegiatan</p>
                 <h3 className="text-3xl font-bold text-[#0A1931] mb-2">{stats.totalEvents}</h3>
-                <p className="text-green-600 text-sm font-semibold">Bulan ini</p>
+                <p className="text-green-600 text-sm font-semibold">
+                  {viewMode === 'yearly' ? `Tahun ${selectedYear}` : 'Bulan ini'}
+                </p>
               </div>
               <div className="w-16 h-16 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-xl flex items-center justify-center text-white shadow-lg">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,6 +247,60 @@ export default function EventRecap() {
           </div>
         </div>
 
+        {/* Revenue Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-all duration-300 group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Total Pendapatan</p>
+                <h3 className="text-2xl font-bold text-[#0A1931] mb-2">
+                  Rp {stats.totalRevenue.toLocaleString('id-ID')}
+                </h3>
+                <p className="text-gray-600 text-sm font-semibold">Dari semua kegiatan</p>
+              </div>
+              <div className="w-16 h-16 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-xl flex items-center justify-center text-white shadow-lg">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-all duration-300 group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Pendapatan Admin</p>
+                <h3 className="text-2xl font-bold text-[#0A1931] mb-2">
+                  Rp {stats.adminIncome.toLocaleString('id-ID')}
+                </h3>
+                <p className="text-green-600 text-sm font-semibold">Komisi 10%</p>
+              </div>
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-all duration-300 group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Pendapatan Panitia</p>
+                <h3 className="text-2xl font-bold text-[#0A1931] mb-2">
+                  Rp {stats.organizerIncome.toLocaleString('id-ID')}
+                </h3>
+                <p className="text-blue-600 text-sm font-semibold">Total 90%</p>
+              </div>
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Monthly Trend Chart */}
@@ -199,22 +309,28 @@ export default function EventRecap() {
               <h2 className="text-2xl font-bold text-[#0A1931]">Trend Kegiatan {selectedYear}</h2>
               <p className="text-[#4A7FA7] text-sm mt-1">Jumlah kegiatan per bulan</p>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
-                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-                  }}
-                />
-                <Bar dataKey="events" fill="#4A7FA7" name="Jumlah Kegiatan" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {stats.monthlyTrend && stats.monthlyTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.monthlyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Bar dataKey="events" fill="#4A7FA7" name="Jumlah Kegiatan" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-400">
+                <p className="font-medium">Tidak ada data untuk ditampilkan</p>
+              </div>
+            )}
           </div>
 
           {/* Category Distribution Chart */}
@@ -223,36 +339,42 @@ export default function EventRecap() {
               <h2 className="text-2xl font-bold text-[#0A1931]">Distribusi Kategori</h2>
               <p className="text-[#4A7FA7] text-sm mt-1">Kegiatan berdasarkan kategori</p>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={Object.entries(stats.categoryStats).map(([category, count], index) => ({
-                    name: category,
-                    value: count,
-                    fill: COLORS[index % COLORS.length]
-                  }))}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {Object.entries(stats.categoryStats).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {Object.keys(stats.categoryStats).length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={Object.entries(stats.categoryStats).map(([category, count], index) => ({
+                      name: category,
+                      value: count,
+                      fill: COLORS[index % COLORS.length]
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {Object.entries(stats.categoryStats).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-400">
+                <p className="font-medium">Tidak ada data kategori</p>
+              </div>
+            )}
           </div>
         </div>
 

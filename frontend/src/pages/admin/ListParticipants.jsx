@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
+import { daftarHadirService } from "../../services/apiService";
 
 export default function ListParticipants() {
   const [participants, setParticipants] = useState([]);
@@ -8,70 +9,45 @@ export default function ListParticipants() {
   const [eventFilter, setEventFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  // Mock participants data - in real app this would come from API
+  // Fetch participants data from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockParticipants = [
-        {
-          id: 1,
-          nama_lengkap: "Ahmad Santoso",
-          email: "ahmad@email.com",
-          no_telepon: "081234567890",
-          event_joined: ["Workshop Digital Marketing", "Seminar Teknologi AI"],
-          status_verifikasi: "verified",
-          tanggal_daftar: "2025-01-15T10:30:00",
-          token_kehadiran: "TK001",
-          sertifikat_diterbitkan: true
-        },
-        {
-          id: 2,
-          nama_lengkap: "Siti Nurhaliza",
-          email: "siti@email.com",
-          no_telepon: "081987654321",
-          event_joined: ["Konser Musik Akustik"],
-          status_verifikasi: "pending",
-          tanggal_daftar: "2025-01-18T14:20:00",
-          token_kehadiran: "TK002",
-          sertifikat_diterbitkan: false
-        },
-        {
-          id: 3,
-          nama_lengkap: "Budi Setiawan",
-          email: "budi@email.com",
-          no_telepon: "085123456789",
-          event_joined: ["Pelatihan Public Speaking", "Workshop Digital Marketing"],
-          status_verifikasi: "verified",
-          tanggal_daftar: "2025-01-20T09:15:00",
-          token_kehadiran: "TK003",
-          sertifikat_diterbitkan: true
-        },
-        {
-          id: 4,
-          nama_lengkap: "Maya Sari",
-          email: "maya@email.com",
-          no_telepon: "089876543210",
-          event_joined: ["Seminar Teknologi AI"],
-          status_verifikasi: "verified",
-          tanggal_daftar: "2025-01-22T16:45:00",
-          token_kehadiran: "TK004",
-          sertifikat_diterbitkan: false
-        },
-        {
-          id: 5,
-          nama_lengkap: "Rizki Ramadhan",
-          email: "rizki@email.com",
-          no_telepon: "082345678901",
-          event_joined: ["Konser Musik Akustik", "Festival Seni Budaya"],
-          status_verifikasi: "pending",
-          tanggal_daftar: "2025-01-25T11:30:00",
-          token_kehadiran: "TK005",
-          sertifikat_diterbitkan: false
+    const fetchParticipants = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching all participants...');
+        
+        const response = await daftarHadirService.getAll();
+        console.log('All participants response:', response);
+        
+        if (response.data?.success) {
+          const participantData = response.data.data.map(p => ({
+            id: p.id,
+            nama_lengkap: p.nama_lengkap,
+            email: p.email,
+            no_telepon: p.no_telepon,
+            event_joined: p.kegiatan ? [p.kegiatan.judul_kegiatan] : [],
+            status_verifikasi: p.status_verifikasi || 'pending',
+            tanggal_daftar: p.created_at,
+            token_kehadiran: p.otp,
+            sertifikat_diterbitkan: false,
+            tipe_peserta: p.tipe_peserta,
+            nama_tim: p.nama_tim,
+            tiket_dipilih: p.tiket_dipilih,
+            total_harga: p.total_harga
+          }));
+          
+          console.log('Mapped all participants:', participantData);
+          setParticipants(participantData);
         }
-      ];
-      setParticipants(mockParticipants);
-      setLoading(false);
-    }, 1000);
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+        setParticipants([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchParticipants();
   }, []);
 
   // Filter participants

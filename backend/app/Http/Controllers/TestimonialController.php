@@ -53,7 +53,7 @@ class TestimonialController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'event_id' => 'required|exists:events,id',
+            'event_id' => 'required|exists:kegiatan,id',
             'testimonial' => 'required|string|max:1000',
             'rating' => 'required|integer|min:1|max:5',
             'event_category' => 'required|string|max:100'
@@ -197,47 +197,6 @@ class TestimonialController extends Controller
                 'message' => 'Failed to reject testimonial',
                 'error' => $e->getMessage()
             ], 500);
-    /**
-     * Approve testimonial (admin only)
-     */
-    public function approve(Testimonial $testimonial): JsonResponse
-    {
-        try {
-            $testimonial->update(['is_approved' => true]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Testimonial approved successfully',
-                'data' => $testimonial->load(['user', 'event'])
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to approve testimonial',
-                'error' => $e->getMessage()
-            ], 500);
         }
     }
-
-    /**
-     * Reject testimonial (admin only)
-     */
-    public function reject(Testimonial $testimonial): JsonResponse
-    {
-        try {
-            $testimonial->update(['is_approved' => false]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Testimonial rejected successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reject testimonial',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+}

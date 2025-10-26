@@ -27,6 +27,7 @@ class User extends Authenticatable
         'pendidikan_terakhir',
         'status_akun',
         'otp',
+        'profile_image',
     ];
 
     /**

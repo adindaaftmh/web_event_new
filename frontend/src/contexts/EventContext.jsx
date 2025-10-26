@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { kegiatanService } from '../services/apiService';
+import { kegiatanService, fileUploadClient } from '../services/apiService';
 
 // Create Event Context
 const EventContext = createContext();
@@ -151,6 +151,39 @@ export const EventProvider = ({ children }) => {
     );
   };
 
+  const searchEvents = async (keyword) => {
+    try {
+      setLoading(true);
+      const response = await kegiatanService.search(keyword);
+
+      if (response.data?.success) {
+        // Transform the search results to frontend format
+        const searchResults = response.data.data.map(event => ({
+          id: event.id,
+          judul_kegiatan: event.judul_kegiatan,
+          lokasi_kegiatan: event.lokasi_kegiatan,
+          waktu_mulai: event.waktu_mulai,
+          waktu_selesai: event.waktu_berakhir,
+          flyer_kegiatan: event.flyer_kegiatan ? `http://localhost:8000/storage/${event.flyer_kegiatan}` : null,
+          deskripsi_kegiatan: event.deskripsi_kegiatan,
+          kategori: event.kategori ? { nama_kategori: event.kategori.nama_kategori } : { nama_kategori: '' },
+          kapasitas_peserta: event.kapasitas_peserta,
+          harga_tiket: event.harga_tiket,
+          kontak_panitia: event.kontak_panitia,
+        }));
+
+        return searchResults;
+      } else {
+        throw new Error(response.data?.message || 'Failed to search events');
+      }
+    } catch (error) {
+      console.error('Error searching events:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     events,
     loading,
@@ -160,6 +193,7 @@ export const EventProvider = ({ children }) => {
     deleteEvent,
     getEventById,
     getEventsByCategory,
+    searchEvents,
     refreshEvents: loadEvents, // Add refresh function
   };
 

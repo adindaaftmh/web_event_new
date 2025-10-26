@@ -39,7 +39,7 @@ class Testimonial extends Model
      */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class, 'event_id');
+        return $this->belongsTo(\App\Models\Kegiatan::class, 'event_id');
     }
 
     /**

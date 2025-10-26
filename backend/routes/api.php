@@ -8,6 +8,8 @@ use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\DaftarHadirController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\FlyerController;
+use App\Http\Controllers\RecommendedEventController;
 
 
 
@@ -23,9 +25,7 @@ Route::post('otp/verify-register', [OtpController::class, 'verifyOtpAndRegister'
 Route::post('otp/resend', [OtpController::class, 'resendOtp']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/user', [AuthController::class, 'getCurrentUser']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('update-profile', [AuthController::class, 'updateProfile']);
 });
@@ -42,8 +42,10 @@ Route::post('daftar-hadir/absen', [DaftarHadirController::class, 'absen']);
 
 // Additional routes for specific functionality
 Route::get('kegiatan-by-kategori/{kategori_id}', [KegiatanController::class, 'getByKategori']);
+Route::get('kegiatan-search', [KegiatanController::class, 'search']);
 Route::get('daftar-hadir-by-kegiatan/{kegiatan_id}', [DaftarHadirController::class, 'getByKegiatan']);
 Route::get('daftar-hadir-by-user/{user_id}', [DaftarHadirController::class, 'getByUser']);
+Route::get('daftar-hadir-export/{kegiatan_id}', [DaftarHadirController::class, 'export']);
 
 // Testimonial Routes (Public - hanya approved testimonials)
 Route::get('testimonials', [TestimonialController::class, 'index']);
@@ -58,5 +60,29 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin only routes for approval
     Route::patch('testimonials/{testimonial}/approve', [TestimonialController::class, 'approve']);
     Route::patch('testimonials/{testimonial}/reject', [TestimonialController::class, 'reject']);
+});
+
+// Flyer Routes (Public - active flyers only)
+Route::get('flyers/active', [FlyerController::class, 'activeFlyers']);
+
+// Protected Flyer Routes (Admin only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('flyers', FlyerController::class);
+    Route::patch('flyers/{flyer}/toggle-active', [FlyerController::class, 'toggleActive']);
+    Route::post('flyers/update-order', [FlyerController::class, 'updateOrder']);
+});
+
+// Recommended Event Routes (Public - active events only)
+Route::get('recommended-events/active', [RecommendedEventController::class, 'activeEvents']);
+Route::get('recommended-events', [RecommendedEventController::class, 'index']);
+
+// Protected Recommended Event Routes (Admin only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('recommended-events', [RecommendedEventController::class, 'store']);
+    Route::get('recommended-events/{id}', [RecommendedEventController::class, 'show']);
+    Route::put('recommended-events/{id}', [RecommendedEventController::class, 'update']);
+    Route::patch('recommended-events/{id}', [RecommendedEventController::class, 'update']);
+    Route::delete('recommended-events/{id}', [RecommendedEventController::class, 'destroy']);
+    Route::patch('recommended-events/{id}/toggle-active', [RecommendedEventController::class, 'toggleActive']);
 });
     

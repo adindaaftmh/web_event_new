@@ -10,7 +10,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // Increased from 10000 to 30000 (30 seconds)
 });
 
 // Interceptor untuk request

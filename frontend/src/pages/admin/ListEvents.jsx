@@ -72,8 +72,13 @@ export default function ListEvents() {
 
   const exportEvents = () => {
     const csvContent = "data:text/csv;charset=utf-8,"
-      + "ID,Judul Kegiatan,Lokasi,Tanggal,Waktu,Kategori,Kapasitas,Harga,Status,Kontak Panitia,Deskripsi\n"
-      + filteredEvents.map(e => `${e.id},"${e.judul_kegiatan}",${e.lokasi_kegiatan},${new Date(e.waktu_mulai).toLocaleDateString()},${new Date(e.waktu_mulai).toLocaleTimeString()},${e.kategori?.nama_kategori || ''},${e.kapasitas_peserta || ''},${e.harga_tiket || ''},${getEventStatus(e)},"${e.kontak_panitia || ''}","${e.deskripsi_kegiatan || ''}"`).join("\n");
+      + "ID,Judul Kegiatan,Lokasi,Tanggal,Waktu,Kategori,Kapasitas,Harga Tiket,Komisi Admin (10%),Diterima Panitia (90%),Status,Kontak Panitia,Deskripsi\n"
+      + filteredEvents.map(e => {
+        const harga = parseInt(e.harga_tiket || 0);
+        const komisi = harga * 0.1;
+        const diterimaPanitia = harga * 0.9;
+        return `${e.id},"${e.judul_kegiatan}",${e.lokasi_kegiatan},${new Date(e.waktu_mulai).toLocaleDateString()},${new Date(e.waktu_mulai).toLocaleTimeString()},${e.kategori?.nama_kategori || ''},${e.kapasitas_peserta || ''},${harga},${komisi},${diterimaPanitia},${getEventStatus(e)},"${e.kontak_panitia || ''}","${e.deskripsi_kegiatan || ''}"`;
+      }).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -222,9 +227,18 @@ export default function ListEvents() {
                             <div className="font-semibold text-[#0A1931] group-hover:text-[#4A7FA7] transition-colors">
                               {event.judul_kegiatan}
                             </div>
-                            <div className="text-sm text-gray-600">
-                              {event.harga_tiket ? `Rp ${parseInt(event.harga_tiket).toLocaleString()}` : 'Gratis'}
-                            </div>
+                            {event.harga_tiket && event.harga_tiket > 0 ? (
+                              <div className="text-sm space-y-0.5">
+                                <div className="font-bold text-[#0A1931]">
+                                  Rp {parseInt(event.harga_tiket).toLocaleString('id-ID')}
+                                </div>
+                                <div className="text-xs text-green-600">
+                                  Komisi: Rp {(parseInt(event.harga_tiket) * 0.1).toLocaleString('id-ID')} (10%)
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-600 font-medium">Gratis</div>
+                            )}
                           </div>
                         </div>
                       </td>

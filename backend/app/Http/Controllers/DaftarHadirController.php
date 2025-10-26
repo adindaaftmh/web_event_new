@@ -36,28 +36,76 @@ class DaftarHadirController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id',
             'kegiatan_id' => 'required|exists:kegiatan,id',
+            'nama_lengkap' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'no_telepon' => 'required|string|max:20',
+            'alamat' => 'nullable|string',
+            'pendidikan_terakhir' => 'nullable|string|max:100',
+            'tipe_peserta' => 'required|in:individu,tim',
+            'nama_tim' => 'nullable|required_if:tipe_peserta,tim|string|max:255',
+            'data_tim' => 'nullable|string',
+            'tiket_dipilih' => 'nullable|string|max:255',
+            'jumlah_tiket' => 'nullable|integer|min:1',
+            'total_harga' => 'nullable|numeric|min:0',
+            'status_kehadiran' => 'nullable|in:hadir,tidak_hadir',
+            'status_verifikasi' => 'nullable|in:pending,verified,rejected',
             'otp' => 'nullable|string|max:10',
         ]);
 
-        // Check if user already registered for this activity
-        $existingAttendance = DaftarHadir::where('user_id', $request->user_id)
+        // Check if event registration is still open (before event starts)
+        $kegiatan = Kegiatan::find($request->kegiatan_id);
+
+        if (!$kegiatan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kegiatan tidak ditemukan'
+            ], 404);
+        }
+
+        // Check if event has ended
+        $now = now();
+        if ($kegiatan->waktu_berakhir && $now->greaterThan($kegiatan->waktu_berakhir)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pendaftaran kegiatan sudah ditutup karena kegiatan sudah selesai'
+            ], 400);
+        }
+
+        // Check if user already registered for this activity (by email)
+        $existingAttendance = DaftarHadir::where('email', $request->email)
             ->where('kegiatan_id', $request->kegiatan_id)
             ->first();
 
         if ($existingAttendance) {
             return response()->json([
                 'success' => false,
-                'message' => 'User sudah terdaftar untuk kegiatan ini'
+                'message' => 'Email ini sudah terdaftar untuk kegiatan ini. Silakan cek halaman Profile -> Token Hadir untuk melihat tiket Anda.',
+                'data' => [
+                    'registration_id' => $existingAttendance->id,
+                    'token' => $existingAttendance->otp
+                ]
             ], 400);
         }
 
         $daftarHadir = DaftarHadir::create([
             'user_id' => $request->user_id,
             'kegiatan_id' => $request->kegiatan_id,
+            'nama_lengkap' => $request->nama_lengkap,
+            'email' => $request->email,
+            'no_telepon' => $request->no_telepon,
+            'alamat' => $request->alamat,
+            'pendidikan_terakhir' => $request->pendidikan_terakhir,
+            'tipe_peserta' => $request->tipe_peserta,
+            'nama_tim' => $request->nama_tim,
+            'data_tim' => $request->data_tim,
+            'tiket_dipilih' => $request->tiket_dipilih,
+            'jumlah_tiket' => $request->jumlah_tiket ?? 1,
+            'total_harga' => $request->total_harga ?? 0,
+            'status_verifikasi' => $request->status_verifikasi ?? 'pending',
             'otp' => $request->otp ?? Str::random(6),
-            'status_absen' => 'tidak-hadir',
+            'status_kehadiran' => $request->status_kehadiran ?? 'tidak_hadir',
         ]);
 
         return response()->json([
@@ -226,5 +274,63 @@ class DaftarHadirController extends Controller
             'success' => true,
             'data' => $daftarHadir
         ]);
+    }
+
+    /**
+     * Export attendance data to CSV
+     */
+    public function export(Request $request, string $kegiatan_id)
+    {
+        $kegiatan = Kegiatan::find($kegiatan_id);
+
+        if (!$kegiatan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kegiatan tidak ditemukan'
+            ], 404);
+        }
+
+        $daftarHadir = DaftarHadir::with(['user', 'kegiatan'])
+            ->where('kegiatan_id', $kegiatan_id)
+            ->get();
+
+        $filename = 'peserta_' . Str::slug($kegiatan->judul_kegiatan) . '_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($daftarHadir) {
+            $file = fopen('php://output', 'w');
+
+            // Header row
+            fputcsv($file, [
+                'No',
+                'Nama Lengkap',
+                'Email',
+                'No. Handphone',
+                'Tanggal Daftar',
+                'Status Kehadiran',
+                'Waktu Absen'
+            ]);
+
+            // Data rows
+            foreach ($daftarHadir as $index => $item) {
+                fputcsv($file, [
+                    $index + 1,
+                    $item->user->nama_lengkap,
+                    $item->user->email,
+                    $item->user->no_handphone,
+                    $item->created_at->format('d/m/Y H:i'),
+                    $item->status_absen === 'hadir' ? 'Hadir' : 'Tidak Hadir',
+                    $item->waktu_absen ? $item->waktu_absen->format('d/m/Y H:i') : '-'
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

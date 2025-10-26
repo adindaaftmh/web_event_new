@@ -31,110 +31,163 @@ export default function Navbar() {
     navigate("/login");
   };
 
+  const scrollToSection = (sectionId) => {
+    // If we're not on homepage, navigate to homepage first
+    if (window.location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: sectionId } });
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }
+  };
+
   return (
     <nav
-      className={`fixed top-6 left-8 right-8 md:left-12 md:right-12 z-50 transition-all duration-300 ${
+      className={`fixed top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 md:left-8 md:right-8 lg:left-12 lg:right-12 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-[#1A3D63]/80 backdrop-blur-2xl shadow-2xl"
-          : "bg-[#1A3D63]/70 backdrop-blur-xl shadow-xl"
+          ? "bg-[#1A3D63]/85 backdrop-blur-2xl shadow-2xl"
+          : "bg-[#1A3D63]/75 backdrop-blur-xl shadow-xl"
       } border border-white/20 rounded-2xl`}
     >
-      <div className="max-w-7xl mx-auto px-6 sm:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left Section: Logo Only */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center border border-white/30 shadow-lg">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
-              </svg>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
+          {/* Left Section: Enhanced Logo */}
+          <div className="flex items-center gap-4 cursor-pointer group" onClick={() => navigate("/")}>
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-white/25 to-white/15 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/40 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                <svg className="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-white/20 to-transparent rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
-            <span className="text-white font-bold text-xl">DYNOTIX</span>
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-xl tracking-wide drop-shadow-lg group-hover:text-blue-100 transition-colors duration-300">DYNOTIX</span>
+              <span className="text-white/70 text-xs font-medium tracking-wider">EVENT PLATFORM</span>
+            </div>
           </div>
 
-          {/* Center-Left: Navigation Menu - Hidden on mobile */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Center: Enhanced Navigation Menu - Hidden on mobile */}
+          <div className="hidden lg:flex items-center justify-center flex-1 gap-1">
+            <button
+              onClick={() => {
+                if (window.location.pathname === '/') {
+                  const heroSection = document.getElementById('hero-section');
+                  if (heroSection) {
+                    heroSection.scrollIntoView({ 
+                      behavior: 'smooth',
+                      block: 'start'
+                    });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                } else {
+                  navigate("/");
+                }
+              }}
+              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+            >
+              Beranda
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+            </button>
+            <button
+              onClick={() => scrollToSection("mobile-app-section")}
+              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+            >
+              Mobile App
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+            </button>
             <button
               onClick={() => navigate("/events")}
-              className="text-white font-medium hover:text-blue-200 transition-all relative group"
+              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
             >
               Event
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
             </button>
             <button
-              onClick={() => navigate("/attractions")}
-              className="text-white font-medium hover:text-blue-200 transition-all relative group"
+              onClick={() => navigate("/about")}
+              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
             >
-              Atraksi
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+              Tentang Kami
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+            </button>
+            <button
+              onClick={() => navigate("/contact")}
+              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+            >
+              Kontak
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
             </button>
           </div>
 
-          {/* Center: Search Bar - Hidden on mobile */}
-          <div className="hidden lg:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Cari disini"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all shadow-md"
-              />
-              <svg
-                className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-          </div>
 
-          {/* Right: Auth Buttons */}
+          {/* Right: Enhanced Auth Buttons */}
           <div className="flex items-center gap-3">
             {user ? (
               <>
-                <div className="hidden md:block text-white text-sm">
-                  <p className="font-semibold">{user.nama_lengkap}</p>
+                <div className="hidden md:flex flex-col items-end text-white text-sm">
+                  <p className="font-bold text-white drop-shadow-lg">{user.nama_lengkap}</p>
                 </div>
                 <button
                   onClick={() => navigate("/profile")}
-                  className="w-10 h-10 bg-white/10 backdrop-blur-sm border border-white/30 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                  className="w-11 h-11 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl border border-white/40 rounded-2xl flex items-center justify-center text-white hover:bg-white/25 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
                   title="Profil"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                  {user.profile_image ? (
+                    <img 
+                      src={user.profile_image} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover rounded-2xl" 
+                    />
+                  ) : (
+                    <svg className="w-5 h-5 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  )}
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="px-4 sm:px-6 py-2 bg-white/10 backdrop-blur-sm border border-white/30 rounded-full text-white text-sm font-semibold hover:bg-white/20 transition-all"
+                  className="w-11 h-11 bg-gradient-to-br from-red-500/25 to-red-600/20 backdrop-blur-xl border border-red-400/50 rounded-2xl flex items-center justify-center text-red-300 hover:bg-red-500/35 hover:text-red-200 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  title="Keluar"
                 >
-                  Keluar
+                  <svg className="w-5 h-5 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
                 </button>
               </>
             ) : (
               <>
                 <button
                   onClick={() => navigate("/register")}
-                  className="hidden sm:block px-6 py-2 bg-[#4A7FA7] rounded-full text-white text-sm font-semibold hover:bg-[#4A7FA7]/80 transition-all shadow-md"
+                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-transparent backdrop-blur-sm border border-white/20 rounded-2xl text-white text-sm font-bold hover:bg-white/10 hover:scale-105 transition-all duration-300"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
                   Daftar
                 </button>
                 <button
                   onClick={() => navigate("/login")}
-                  className="px-4 sm:px-6 py-2 bg-[#0A1931] rounded-full text-white text-sm font-bold hover:bg-[#0A1931]/80 transition-all shadow-lg hover:shadow-xl"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-transparent backdrop-blur-sm border border-white/20 rounded-2xl text-white text-sm font-bold hover:bg-white/10 hover:scale-105 transition-all duration-300"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
                   Masuk
                 </button>
               </>
             )}
 
-            {/* Mobile Menu Button */}
+            {/* Enhanced Mobile Menu Button - Transparent */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden w-10 h-10 flex items-center justify-center text-white"
+              className="lg:hidden w-11 h-11 bg-transparent backdrop-blur-xl border border-white/20 rounded-2xl flex items-center justify-center text-white hover:bg-white/10 hover:scale-105 transition-all duration-300 ml-3"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isMobileMenuOpen ? (
@@ -147,46 +200,66 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Enhanced Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/20 py-4 space-y-4">
-            {/* Search Bar Mobile */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari disini"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-md"
-              />
-              <svg
-                className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-
+          <div className="lg:hidden border-t border-white/20 py-3 space-y-1">
             {/* Menu Items */}
+            <button
+              onClick={() => {
+                if (window.location.pathname === '/') {
+                  const heroSection = document.getElementById('hero-section');
+                  if (heroSection) {
+                    heroSection.scrollIntoView({ 
+                      behavior: 'smooth',
+                      block: 'start'
+                    });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                } else {
+                  navigate("/");
+                }
+                setIsMobileMenuOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+            >
+              Beranda
+            </button>
+            <button
+              onClick={() => {
+                scrollToSection("mobile-app-section");
+                setIsMobileMenuOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+            >
+              Mobile App
+            </button>
             <button
               onClick={() => {
                 navigate("/events");
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-4 py-2 text-white font-medium hover:bg-white/10 rounded-lg transition-all"
+              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
             >
               Event
             </button>
             <button
               onClick={() => {
-                navigate("/attractions");
+                navigate("/about");
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-4 py-2 text-white font-medium hover:bg-white/10 rounded-lg transition-all"
+              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
             >
-              Atraksi
+              Tentang
+            </button>
+            <button
+              onClick={() => {
+                navigate("/contact");
+                setIsMobileMenuOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+            >
+              Kontak
             </button>
           </div>
         )}

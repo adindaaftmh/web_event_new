@@ -14,13 +14,26 @@ class DaftarHadir extends Model
     protected $fillable = [
         'user_id',
         'kegiatan_id',
+        'nama_lengkap',
+        'email',
+        'no_telepon',
+        'alamat',
+        'pendidikan_terakhir',
+        'tipe_peserta',
+        'nama_tim',
+        'data_tim',
+        'tiket_dipilih',
+        'jumlah_tiket',
+        'total_harga',
+        'status_verifikasi',
         'otp',
-        'status_absen',
+        'status_kehadiran',
         'waktu_absen',
     ];
 
     protected $casts = [
         'waktu_absen' => 'datetime',
+        'total_harga' => 'decimal:2',
     ];
 
     /**

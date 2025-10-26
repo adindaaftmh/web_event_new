@@ -5,7 +5,7 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8000/api';
 
 // Membuat instance axios untuk file uploads (tanpa interceptors default)
-const fileUploadClient = axios.create({
+export const fileUploadClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // Longer timeout for file uploads
 });
@@ -54,6 +54,9 @@ export const kegiatanService = {
   // Mendapatkan kegiatan by kategori (public)
   getByKategori: (kategoriId) => publicApiClient.get(`/kegiatan-by-kategori/${kategoriId}`),
 
+  // Pencarian kegiatan (public)
+  search: (keyword) => publicApiClient.get(`/kegiatan-search?q=${encodeURIComponent(keyword)}`),
+
   // Membuat kegiatan baru (dengan file upload) - menggunakan authenticated client
   create: async (data) => {
     try {
@@ -72,7 +75,14 @@ export const kegiatanService = {
       // Add other fields
       Object.keys(data).forEach(key => {
         if (key !== 'flyer_kegiatan' && data[key] !== null && data[key] !== undefined) {
-          formData.append(key, data[key]);
+          // Handle array/object fields (like tickets) - convert to JSON string
+          if (typeof data[key] === 'object' && !Array.isArray(data[key])) {
+            formData.append(key, data[key]);
+          } else if (Array.isArray(data[key])) {
+            formData.append(key, JSON.stringify(data[key]));
+          } else {
+            formData.append(key, data[key]);
+          }
           console.log(`Appended ${key}:`, data[key]);
         }
       });
@@ -149,6 +159,11 @@ export const daftarHadirService = {
 
   // Absen
   absen: (data) => apiClient.post('/daftar-hadir/absen', data),
+
+  // Export data peserta
+  export: (kegiatanId) => apiClient.get(`/daftar-hadir-export/${kegiatanId}`, {
+    responseType: 'blob' // For file download
+  }),
 };
 
 // Service untuk OTP dan Authentication
@@ -174,8 +189,22 @@ export const userService = {
   // Logout
   logout: () => apiClient.post('/logout'),
 
-  // Update profile
-  updateProfile: (data) => apiClient.post('/update-profile', data),
+  // Update profile (dengan support file upload)
+  updateProfile: async (data) => {
+    try {
+      // Jika data adalah FormData (untuk file upload)
+      if (data instanceof FormData) {
+        // Jangan set Content-Type manual untuk FormData, biarkan browser set boundary
+        return await fileUploadClient.post('/update-profile', data);
+      } else {
+        // Jika data biasa (tanpa file)
+        return await apiClient.post('/update-profile', data);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  },
 };
 
 // Service untuk Testimonial

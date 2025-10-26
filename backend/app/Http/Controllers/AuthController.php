@@ -58,7 +58,12 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'nama_lengkap' => $user->nama_lengkap,
                         'email' => $user->email,
-                        'no_handphone' => $user->no_handphone
+                        'no_handphone' => $user->no_handphone,
+                        'alamat' => $user->alamat,
+                        'pendidikan_terakhir' => $user->pendidikan_terakhir,
+                        'role' => $user->role ?? 'user',
+                        'status_akun' => $user->status_akun,
+                        'profile_image' => $user->profile_image ? url($user->profile_image) : null
                     ],
                     'token' => $token
                 ]
@@ -68,6 +73,36 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Login gagal',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get current authenticated user
+     */
+    public function getCurrentUser(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $user->id,
+                    'nama_lengkap' => $user->nama_lengkap,
+                    'email' => $user->email,
+                    'no_handphone' => $user->no_handphone,
+                    'alamat' => $user->alamat,
+                    'pendidikan_terakhir' => $user->pendidikan_terakhir,
+                    'profile_image' => $user->profile_image ? url($user->profile_image) : null,
+                    'status_akun' => $user->status_akun
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data user',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -272,18 +307,43 @@ class AuthController extends Controller
      */
     public function updateProfile(Request $request)
     {
+        // Log incoming request data for debugging
+        \Log::info('Update Profile Request:', [
+            'all_data' => $request->all(),
+            'files' => $request->allFiles(),
+            'headers' => $request->headers->all()
+        ]);
+
         $validator = Validator::make($request->all(), [
-            'nama_lengkap' => 'sometimes|required|string|max:255',
-            'no_handphone' => 'sometimes|required|string|max:20',
-            'alamat' => 'sometimes|required|string|max:500',
-            'pendidikan_terakhir' => 'sometimes|required|string|in:SMA,D3,S1,S2,S3'
+            'nama_lengkap' => 'sometimes|string|max:255',
+            'no_handphone' => 'sometimes|string|max:20|min:10',
+            'alamat' => 'sometimes|string|max:500',
+            'pendidikan_terakhir' => 'sometimes|string|in:SD/MI,SMP/MTS,SMA/SMK,Diploma/Sarjana,Lainnya',
+            'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Profile Update Validation failed:', [
+                'errors' => $validator->errors()->toArray(),
+                'input_data' => $request->all(),
+                'files' => $request->allFiles()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
+                'debug_info' => [
+                    'received_fields' => array_keys($request->all()),
+                    'received_files' => array_keys($request->allFiles()),
+                    'validation_rules' => [
+                        'nama_lengkap' => 'sometimes|string|max:255',
+                        'no_handphone' => 'sometimes|string|max:20|min:10',
+                        'alamat' => 'sometimes|string|max:500',
+                        'pendidikan_terakhir' => 'sometimes|string|in:SD/MI,SMP/MTS,SMA/SMK,Diploma/Sarjana,Lainnya',
+                        'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
+                    ]
+                ]
             ], 422);
         }
 
@@ -304,6 +364,34 @@ class AuthController extends Controller
                 $user->pendidikan_terakhir = $request->pendidikan_terakhir;
             }
 
+            // Handle profile image upload
+            $profileImageUrl = null;
+            if ($request->hasFile('profile_image')) {
+                $image = $request->file('profile_image');
+                $imageName = time() . '_' . $user->id . '.' . $image->getClientOriginalExtension();
+                
+                // Create uploads directory if it doesn't exist
+                $uploadPath = public_path('uploads/profiles');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
+                }
+                
+                // Move the uploaded file
+                $image->move($uploadPath, $imageName);
+                
+                // Delete old profile image if exists
+                if ($user->profile_image) {
+                    $oldImagePath = public_path($user->profile_image);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                }
+                
+                // Update user profile image path
+                $profileImageUrl = 'uploads/profiles/' . $imageName;
+                $user->profile_image = $profileImageUrl;
+            }
+
             $user->save();
 
             return response()->json([
@@ -315,8 +403,10 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'no_handphone' => $user->no_handphone,
                     'alamat' => $user->alamat,
-                    'pendidikan_terakhir' => $user->pendidikan_terakhir
-                ]
+                    'pendidikan_terakhir' => $user->pendidikan_terakhir,
+                    'profile_image' => $user->profile_image ? url($user->profile_image) : null
+                ],
+                'profile_image_url' => $user->profile_image ? url($user->profile_image) : null
             ]);
 
         } catch (\Exception $e) {
