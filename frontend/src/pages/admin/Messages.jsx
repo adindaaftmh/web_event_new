@@ -3,7 +3,7 @@ import AdminLayout from '../../components/AdminLayout';
 import axios from 'axios';
 import {
   Mail, Eye, Trash2, Calendar, User, Phone, MessageSquare,
-  Search, Filter, ChevronDown, Download
+  Search, Filter, ChevronDown, Download, Reply
 } from 'lucide-react';
 
 const API_URL = "http://localhost:8000/api";
@@ -15,6 +15,9 @@ export default function Messages() {
   const [filterStatus, setFilterStatus] = useState('all'); // all, read, unread
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showComposeModal, setShowComposeModal] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     fetchMessages();
@@ -23,55 +26,23 @@ export default function Messages() {
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      // First, get messages from localStorage
-      const localMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
-      
-      // Mock data for demonstration
-      const mockMessages = [
-        {
-          id: 999,
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '081234567890',
-          subject: 'Pertanyaan tentang Event',
-          message: 'Halo, saya ingin bertanya tentang pendaftaran event yang akan datang. Apakah masih ada slot yang tersedia?',
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          is_read: false
-        },
-        {
-          id: 998,
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phone: '082345678901',
-          subject: 'Feedback Website',
-          message: 'Website sangat informatif dan mudah digunakan. Terima kasih!',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          is_read: true
-        }
-      ];
-
-      // Combine localStorage messages with mock data
-      const combinedMessages = [...localMessages, ...mockMessages];
-      setMessages(combinedMessages);
-
-      /* Uncomment when backend ready:
       const token = localStorage.getItem('adminToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+      
       const response = await axios.get(`${API_URL}/contact-messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      if (response.data) {
-        const apiMessages = Array.isArray(response.data) ? response.data : response.data.data || [];
-        // Merge API messages with localStorage messages
-        const allMessages = [...localMessages, ...apiMessages];
-        setMessages(allMessages);
+      if (response.data?.success) {
+        setMessages(response.data.data || []);
+      } else {
+        setMessages([]);
       }
-      */
+
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new Event('messagesUpdated'));
     } catch (error) {
       console.error('Error fetching messages:', error);
-      // Fallback to localStorage only
-      const localMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
-      setMessages(localMessages);
+      setMessages([]);
     } finally {
       setLoading(false);
     }
@@ -89,25 +60,20 @@ export default function Messages() {
 
   const markAsRead = async (id) => {
     try {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+      
+      await axios.put(`${API_URL}/contact-messages/${id}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
       // Update in state
       const updatedMessages = messages.map(msg => 
         msg.id === id ? { ...msg, is_read: true } : msg
       );
       setMessages(updatedMessages);
 
-      // Update in localStorage
-      const localMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
-      const updatedLocalMessages = localMessages.map(msg =>
-        msg.id === id ? { ...msg, is_read: true } : msg
-      );
-      localStorage.setItem('contactMessages', JSON.stringify(updatedLocalMessages));
-
-      /* Uncomment when backend ready:
-      const token = localStorage.getItem('adminToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
-      await axios.put(`${API_URL}/contact-messages/${id}/read`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      */
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new Event('messagesUpdated'));
     } catch (error) {
       console.error('Error marking message as read:', error);
     }
@@ -117,24 +83,73 @@ export default function Messages() {
     if (!window.confirm('Apakah Anda yakin ingin menghapus pesan ini?')) return;
     
     try {
-      // Update in state
-      setMessages(messages.filter(msg => msg.id !== id));
-
-      // Update in localStorage
-      const localMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
-      const updatedLocalMessages = localMessages.filter(msg => msg.id !== id);
-      localStorage.setItem('contactMessages', JSON.stringify(updatedLocalMessages));
-
-      alert('Pesan berhasil dihapus');
-
-      /* Uncomment when backend ready:
       const token = localStorage.getItem('adminToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+      
       await axios.delete(`${API_URL}/contact-messages/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      */
+
+      // Update in state
+      setMessages(messages.filter(msg => msg.id !== id));
+
+      alert('Pesan berhasil dihapus');
     } catch (error) {
       console.error('Error deleting message:', error);
+      alert('Gagal menghapus pesan');
+    }
+  };
+
+  const handleReplyEmail = (message) => {
+    console.log('=== handleReplyEmail START ===');
+    console.log('Message:', message);
+    
+    setSelectedMessage(message);
+    console.log('Selected message set');
+    
+    // Set default template
+    const template = `Halo ${message.name},\n\nTerima kasih telah menghubungi kami.\n\n[Tulis balasan Anda di sini]\n\nSalam,\nTim Admin`;
+    setReplyMessage(template);
+    console.log('Reply message set:', template);
+    
+    setShowComposeModal(true);
+    console.log('showComposeModal set to TRUE');
+    console.log('=== handleReplyEmail END ===');
+  };
+
+  const handleSendEmail = async () => {
+    if (!replyMessage.trim()) {
+      alert('Pesan balasan tidak boleh kosong');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_URL}/contact-messages/${selectedMessage.id}/reply`,
+        { reply_message: replyMessage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data?.success) {
+        alert('✓ Email berhasil dikirim!');
+        setShowComposeModal(false);
+        setReplyMessage('');
+        
+        // Mark as read in local state
+        const updatedMessages = messages.map(msg => 
+          msg.id === selectedMessage.id ? { ...msg, is_read: true } : msg
+        );
+        setMessages(updatedMessages);
+      } else {
+        throw new Error(response.data?.message || 'Gagal mengirim email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('❌ Gagal mengirim email: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSending(false);
     }
   };
 
@@ -251,70 +266,87 @@ export default function Messages() {
           </div>
 
           {/* Messages List */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-[#4A7FA7]/10">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {filteredMessages.length === 0 ? (
               <div className="p-12 text-center">
                 <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Tidak ada pesan</p>
+                <p className="text-[#4A7FA7] font-medium">Tidak ada pesan</p>
+                <p className="text-gray-400 text-sm mt-1">Pesan yang masuk akan ditampilkan di sini</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-100">
                 {filteredMessages.map((message) => (
                   <div
                     key={message.id}
-                    className={`p-6 hover:bg-[#4A7FA7]/5 transition-all cursor-pointer ${
+                    className={`p-5 hover:bg-blue-50/30 transition-all group ${
                       !message.is_read ? 'bg-blue-50/50' : ''
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-11 h-11 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-full flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
                             {message.name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-[#0A1931]">{message.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-bold text-[#0A1931] text-base">{message.name}</h3>
                               {!message.is_read && (
-                                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm">
                                   Baru
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">{message.email}</p>
+                            <div className="flex items-center gap-3 mt-1 flex-wrap">
+                              <p className="text-sm text-gray-600 flex items-center gap-1">
+                                <Mail className="w-3.5 h-3.5 text-blue-600" />
+                                {message.email}
+                              </p>
+                              {message.phone && (
+                                <p className="text-sm text-gray-600 flex items-center gap-1">
+                                  <Phone className="w-3.5 h-3.5 text-green-600" />
+                                  {message.phone}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="ml-13">
-                          <h4 className="font-semibold text-[#0A1931] mb-1">{message.subject}</h4>
-                          <p className="text-gray-600 text-sm line-clamp-2">{message.message}</p>
+                        <div className="ml-14">
+                          <h4 className="font-semibold text-[#0A1931] mb-2 text-sm">{message.subject}</h4>
+                          <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">{message.message}</p>
                           
-                          <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(message.created_at).toLocaleDateString('id-ID')}
-                            </span>
-                            {message.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {message.phone}
-                              </span>
-                            )}
+                          <div className="flex items-center gap-1 mt-3 text-xs text-gray-500">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>{new Date(message.created_at).toLocaleDateString('id-ID', { 
+                              day: 'numeric', 
+                              month: 'long', 
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleReplyEmail(message)}
+                          className="p-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-sm hover:shadow"
+                          title="Balas via Email"
+                        >
+                          <Reply className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleViewMessage(message)}
-                          className="p-2 bg-[#4A7FA7]/10 text-[#4A7FA7] rounded-lg hover:bg-[#4A7FA7] hover:text-white transition-all"
+                          className="p-2.5 bg-[#4A7FA7] text-white rounded-lg hover:bg-[#1A3D63] transition-all shadow-sm hover:shadow"
                           title="Lihat Detail"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(message.id)}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
+                          className="p-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-sm hover:shadow"
                           title="Hapus"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -324,18 +356,6 @@ export default function Messages() {
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Detail Modal */}
-      {showModal && selectedMessage && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-[#0A1931]">Detail Pesan</h2>
-              <button
                 onClick={() => setShowModal(false)}
                 className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-[#0A1931] hover:bg-gray-200 transition-colors"
               >
@@ -389,13 +409,22 @@ export default function Messages() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <a
-                  href={`mailto:${selectedMessage.email}`}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:shadow-lg transition-all text-center"
+              <div className="flex gap-3 pt-4 relative z-[70]">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Button clicked!');
+                    handleReplyEmail(selectedMessage);
+                    setShowModal(false);
+                  }}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  style={{ pointerEvents: 'auto' }}
                 >
+                  <Reply className="w-4 h-4" />
                   Balas via Email
-                </a>
+                </button>
                 <button
                   onClick={() => setShowModal(false)}
                   className="px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all"
@@ -409,7 +438,7 @@ export default function Messages() {
       )}
 
       {/* Animation Styles */}
-      <style jsx>{`
+      <style>{`
         @keyframes float {
           0%, 100% {
             transform: translateY(0) translateX(0);

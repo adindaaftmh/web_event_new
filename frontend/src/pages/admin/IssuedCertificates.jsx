@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/AdminLayout';
-import { kegiatanService } from '../../services/apiService';
+import { kegiatanService, daftarHadirService } from '../../services/apiService';
 
 export default function IssuedCertificates() {
   const [events, setEvents] = useState([]);
@@ -9,6 +9,8 @@ export default function IssuedCertificates() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [eventSearchTerm, setEventSearchTerm] = useState('');
+  const [showEventDropdown, setShowEventDropdown] = useState(false);
 
   // Fetch all events
   useEffect(() => {
@@ -38,38 +40,34 @@ export default function IssuedCertificates() {
   const fetchCertificates = async () => {
     try {
       setLoading(true);
-      const mockCertificates = [
-        {
-          id: 1,
-          namaLengkap: 'Budi Santoso',
-          email: 'budi@example.com',
-          nomorSertifikat: 'CERT-2025-001',
-          tanggalTerbit: '2025-10-20 10:00:00',
-          status: 'diterbitkan',
-          kategoriKehadiran: 'Peserta'
-        },
-        {
-          id: 2,
-          namaLengkap: 'Siti Nurhaliza',
-          email: 'siti@example.com',
-          nomorSertifikat: 'CERT-2025-002',
-          tanggalTerbit: '2025-10-20 10:05:00',
-          status: 'diterbitkan',
-          kategoriKehadiran: 'Peserta'
-        },
-        {
-          id: 3,
-          namaLengkap: 'Ahmad Wijaya',
-          email: 'ahmad@example.com',
-          nomorSertifikat: null,
-          tanggalTerbit: null,
-          status: 'belum_diterbitkan',
-          kategoriKehadiran: 'Peserta'
-        }
-      ];
-      setCertificates(mockCertificates);
+      console.log('Fetching certificates for event:', selectedEvent?.id);
+      
+      const response = await daftarHadirService.getByKegiatan(selectedEvent.id);
+      console.log('Certificates response:', response);
+      
+      if (response.data?.success) {
+        const certificateData = response.data.data
+          .filter(p => p.status_kehadiran === 'hadir') // Only show participants who attended
+          .map(p => ({
+            id: p.id,
+            namaLengkap: p.nama_lengkap,
+            email: p.email,
+            nomorTelepon: p.no_telepon,
+            nomorSertifikat: p.nomor_sertifikat || null,
+            tanggalTerbit: p.tanggal_terbit_sertifikat || null,
+            status: p.nomor_sertifikat ? 'diterbitkan' : 'belum_diterbitkan',
+            kategoriKehadiran: p.tipe_peserta === 'tim' ? 'Tim' : 'Individu',
+            ticket: p.tiket_dipilih
+          }));
+        
+        console.log('Mapped certificates:', certificateData);
+        setCertificates(certificateData);
+      } else {
+        setCertificates([]);
+      }
     } catch (error) {
       console.error('Error fetching certificates:', error);
+      setCertificates([]);
     } finally {
       setLoading(false);
     }
@@ -111,6 +109,37 @@ export default function IssuedCertificates() {
       : 0
   };
 
+  // Filter events for search
+  const filteredEvents = events.filter(event => {
+    if (!eventSearchTerm || eventSearchTerm.trim() === '') return true;
+    const searchLower = eventSearchTerm.toLowerCase();
+    return event.judul_kegiatan.toLowerCase().includes(searchLower) ||
+           event.lokasi_kegiatan?.toLowerCase().includes(searchLower);
+  });
+
+  const handleEventSelect = (event) => {
+    setSelectedEvent(event);
+    setEventSearchTerm(event ? event.judul_kegiatan : '');
+    setShowEventDropdown(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.event-selector-container')) {
+        setShowEventDropdown(false);
+      }
+    };
+
+    if (showEventDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEventDropdown]);
+
   return (
     <AdminLayout>
       <div className="min-h-screen relative bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 overflow-hidden">
@@ -136,23 +165,76 @@ export default function IssuedCertificates() {
             </div>
           </div>
 
-          <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6">
-            <label className="block text-sm font-bold text-[#0A1931] mb-3">Pilih Event</label>
-            <select
-              value={selectedEvent?.id || ''}
-              onChange={(e) => {
-                const event = events.find(ev => ev.id === parseInt(e.target.value));
-                setSelectedEvent(event);
-              }}
-              className="w-full px-4 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors"
-            >
-              <option value="">-- Pilih Event --</option>
-              {events.map(event => (
-                <option key={event.id} value={event.id}>
-                  {event.judul_kegiatan} - {new Date(event.waktu_mulai).toLocaleDateString('id-ID')}
-                </option>
-              ))}
-            </select>
+          {/* Event Selector with Search */}
+          <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 mb-6 event-selector-container relative z-50" style={{ isolation: 'isolate' }}>
+            <label className="block text-sm font-bold text-[#0A1931] mb-3">
+              Pilih Event
+            </label>
+            <div className="relative" style={{ zIndex: 100 }}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={selectedEvent ? selectedEvent.judul_kegiatan : eventSearchTerm}
+                  onChange={(e) => {
+                    setEventSearchTerm(e.target.value);
+                    setSelectedEvent(null);
+                    setShowEventDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (!selectedEvent) {
+                      setShowEventDropdown(true);
+                      if (!eventSearchTerm) {
+                        setEventSearchTerm('');
+                      }
+                    }
+                  }}
+                  placeholder="Cari atau pilih event..."
+                  className="w-full pl-10 pr-10 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors relative z-10"
+                  readOnly={!!selectedEvent}
+                />
+                <svg className="w-5 h-5 text-[#4A7FA7] absolute left-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {selectedEvent && (
+                  <button
+                    onClick={() => {
+                      setSelectedEvent(null);
+                      setEventSearchTerm('');
+                      setShowEventDropdown(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-20"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Dropdown Results */}
+              {showEventDropdown && !selectedEvent && (
+                <div className="absolute top-full left-0 right-0 z-[9999] mt-2 bg-white border-2 border-[#4A7FA7]/20 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style={{ position: 'absolute' }}>
+                  {filteredEvents.length > 0 ? (
+                    filteredEvents.map(event => (
+                      <button
+                        key={event.id}
+                        onClick={() => handleEventSelect(event)}
+                        className="w-full px-4 py-3 text-left hover:bg-[#4A7FA7]/10 transition-colors border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-semibold text-[#0A1931]">{event.judul_kegiatan}</div>
+                        <div className="text-sm text-[#4A7FA7]">
+                          {new Date(event.waktu_mulai).toLocaleDateString('id-ID')} • {event.lokasi_kegiatan}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                      Tidak ada event yang ditemukan
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {selectedEvent ? (

@@ -1,12 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState(null);
+  const [hoveredMenu, setHoveredMenu] = useState(null);
+
+  // Function to check if a menu item is active
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') {
+      return true;
+    }
+    if (path !== '/' && location.pathname.startsWith(path)) {
+      return true;
+    }
+    return false;
+  };
+
+  // Function to check if active menu underline should be visible
+  const shouldShowActiveUnderline = () => {
+    // If no menu is hovered, show underline on active menu
+    if (!hoveredMenu) return true;
+    // If a menu is hovered, hide underline on active menu
+    return false;
+  };
 
   useEffect(() => {
     // Check if user is logged in
@@ -74,8 +95,13 @@ export default function Navbar() {
           </div>
 
           {/* Center: Enhanced Navigation Menu - Hidden on mobile */}
-          <div className="hidden lg:flex items-center justify-center flex-1 gap-1">
+          <div 
+            className="hidden lg:flex items-center justify-center flex-1 gap-1"
+            onMouseLeave={() => setHoveredMenu(null)}
+          >
             <button
+              onMouseEnter={() => setHoveredMenu('beranda')}
+              onMouseLeave={() => setHoveredMenu(null)}
               onClick={() => {
                 if (window.location.pathname === '/') {
                   const heroSection = document.getElementById('hero-section');
@@ -91,38 +117,80 @@ export default function Navbar() {
                   navigate("/");
                 }
               }}
-              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+              className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 group ${
+                isActive('/') 
+                  ? "text-blue-200 font-bold" 
+                  : "text-white hover:text-blue-200"
+              }`}
             >
               Beranda
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+              <span className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                isActive('/') 
+                  ? (shouldShowActiveUnderline() ? "w-full" : "w-0")
+                  : (hoveredMenu === 'beranda' ? "w-full" : "w-0")
+              }`}></span>
             </button>
             <button
+              onMouseEnter={() => setHoveredMenu('mobile-app')}
+              onMouseLeave={() => setHoveredMenu(null)}
               onClick={() => scrollToSection("mobile-app-section")}
               className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
             >
               Mobile App
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+              <span className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                hoveredMenu === 'mobile-app' ? "w-full" : "w-0"
+              }`}></span>
             </button>
             <button
+              onMouseEnter={() => setHoveredMenu('event')}
+              onMouseLeave={() => setHoveredMenu(null)}
               onClick={() => navigate("/events")}
-              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+              className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 group ${
+                isActive('/events') 
+                  ? "text-blue-200 font-bold" 
+                  : "text-white hover:text-blue-200"
+              }`}
             >
               Event
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+              <span className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                isActive('/events') 
+                  ? (shouldShowActiveUnderline() ? "w-full" : "w-0")
+                  : (hoveredMenu === 'event' ? "w-full" : "w-0")
+              }`}></span>
             </button>
             <button
+              onMouseEnter={() => setHoveredMenu('tentang')}
+              onMouseLeave={() => setHoveredMenu(null)}
               onClick={() => navigate("/about")}
-              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+              className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 group ${
+                isActive('/about') 
+                  ? "text-blue-200 font-bold" 
+                  : "text-white hover:text-blue-200"
+              }`}
             >
               Tentang Kami
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+              <span className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                isActive('/about') 
+                  ? (shouldShowActiveUnderline() ? "w-full" : "w-0")
+                  : (hoveredMenu === 'tentang' ? "w-full" : "w-0")
+              }`}></span>
             </button>
             <button
+              onMouseEnter={() => setHoveredMenu('kontak')}
+              onMouseLeave={() => setHoveredMenu(null)}
               onClick={() => navigate("/contact")}
-              className="relative px-3 py-1.5 text-white text-xs font-medium hover:text-blue-200 transition-all duration-200 group"
+              className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 group ${
+                isActive('/contact') 
+                  ? "text-blue-200 font-bold" 
+                  : "text-white hover:text-blue-200"
+              }`}
             >
               Kontak
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full group-hover:w-full transition-all duration-300 ease-out"></span>
+              <span className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                isActive('/contact') 
+                  ? (shouldShowActiveUnderline() ? "w-full" : "w-0")
+                  : (hoveredMenu === 'kontak' ? "w-full" : "w-0")
+              }`}></span>
             </button>
           </div>
 
@@ -221,7 +289,11 @@ export default function Navbar() {
                 }
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+              className={`block w-full text-left px-3 py-2 text-sm font-medium rounded transition-all ${
+                isActive('/')
+                  ? "text-blue-200 font-bold bg-white/10 border-l-4 border-blue-400"
+                  : "text-white hover:bg-white/10"
+              }`}
             >
               Beranda
             </button>
@@ -239,7 +311,11 @@ export default function Navbar() {
                 navigate("/events");
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+              className={`block w-full text-left px-3 py-2 text-sm font-medium rounded transition-all ${
+                isActive('/events')
+                  ? "text-blue-200 font-bold bg-white/10 border-l-4 border-blue-400"
+                  : "text-white hover:bg-white/10"
+              }`}
             >
               Event
             </button>
@@ -248,7 +324,11 @@ export default function Navbar() {
                 navigate("/about");
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+              className={`block w-full text-left px-3 py-2 text-sm font-medium rounded transition-all ${
+                isActive('/about')
+                  ? "text-blue-200 font-bold bg-white/10 border-l-4 border-blue-400"
+                  : "text-white hover:bg-white/10"
+              }`}
             >
               Tentang
             </button>
@@ -257,7 +337,11 @@ export default function Navbar() {
                 navigate("/contact");
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 text-white text-sm font-medium hover:bg-white/10 rounded transition-all"
+              className={`block w-full text-left px-3 py-2 text-sm font-medium rounded transition-all ${
+                isActive('/contact')
+                  ? "text-blue-200 font-bold bg-white/10 border-l-4 border-blue-400"
+                  : "text-white hover:bg-white/10"
+              }`}
             >
               Kontak
             </button>

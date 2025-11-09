@@ -1,14 +1,36 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import html2canvas from 'html2canvas';
 
 export default function TicketModal({ isOpen, onClose, ticketData }) {
   const ticketRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [ripples, setRipples] = useState([]);
 
   if (!isOpen || !ticketData) return null;
 
-  const handleDownload = async () => {
+  const handleDownload = async (e) => {
     try {
+      // Create ripple effect
+      const button = e.currentTarget;
+      const rect = button.getBoundingClientRect();
+      const ripple = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        id: Date.now()
+      };
+      setRipples(prev => [...prev, ripple]);
+      setTimeout(() => {
+        setRipples(prev => prev.filter(r => r.id !== ripple.id));
+      }, 600);
+
+      setIsDownloading(true);
+      
+      // Simulate processing time for better UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const ticketElement = ticketRef.current;
       const canvas = await html2canvas(ticketElement, {
         scale: 2,
@@ -21,8 +43,21 @@ export default function TicketModal({ isOpen, onClose, ticketData }) {
       link.download = `ticket-${ticketData.eventName.replace(/\s+/g, '-')}-${ticketData.registrationId}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+      
+      setIsDownloading(false);
+      
+      // Show confetti and success popup
+      setShowConfetti(true);
+      setShowSuccessPopup(true);
+      
+      // Hide confetti after animation
+      setTimeout(() => setShowConfetti(false), 3000);
+      
+      // Hide success popup after 4 seconds
+      setTimeout(() => setShowSuccessPopup(false), 4000);
     } catch (error) {
       console.error('Error downloading ticket:', error);
+      setIsDownloading(false);
       alert('Gagal mendownload tiket. Silakan coba lagi.');
     }
   };
@@ -47,6 +82,47 @@ export default function TicketModal({ isOpen, onClose, ticketData }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      {/* Confetti Animation */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-10%',
+                width: `${Math.random() * 10 + 5}px`,
+                height: `${Math.random() * 10 + 5}px`,
+                backgroundColor: ['#4A7FA7', '#1A3D63', '#FFC107', '#FF5722', '#4CAF50', '#E91E63'][Math.floor(Math.random() * 6)],
+                borderRadius: Math.random() > 0.5 ? '50%' : '0',
+                animationDelay: `${Math.random() * 0.5}s`,
+                animationDuration: `${Math.random() * 2 + 2}s`,
+                opacity: Math.random() * 0.8 + 0.2
+              }}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Success Popup Notification */}
+      {showSuccessPopup && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[70] animate-slide-down">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-bounce-once">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-lg">Tiket Berhasil Diunduh!</p>
+              <p className="text-white/90 text-sm">File telah tersimpan di perangkat Anda</p>
+            </div>
+            <div className="animate-ping absolute inset-0 rounded-2xl bg-green-400 opacity-20"></div>
+          </div>
+        </div>
+      )}
+      
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] p-6 rounded-t-3xl">
@@ -284,16 +360,43 @@ export default function TicketModal({ isOpen, onClose, ticketData }) {
         <div className="p-6 bg-gray-50 rounded-b-3xl flex gap-3">
           <button
             onClick={handleDownload}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:from-[#4A7FA7]/90 hover:to-[#1A3D63]/90 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            disabled={isDownloading}
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:from-[#4A7FA7]/90 hover:to-[#1A3D63]/90 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 relative overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed group"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Download Tiket
+            {/* Ripple effects */}
+            {ripples.map(ripple => (
+              <span
+                key={ripple.id}
+                className="absolute bg-white/30 rounded-full animate-ripple"
+                style={{
+                  left: ripple.x,
+                  top: ripple.y,
+                  width: 0,
+                  height: 0
+                }}
+              />
+            ))}
+            
+            {/* Button content */}
+            {isDownloading ? (
+              <>
+                <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span className="animate-pulse">Mengunduh...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Download Tiket</span>
+              </>
+            )}
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-white border-2 border-[#4A7FA7] text-[#4A7FA7] font-bold rounded-xl hover:bg-[#4A7FA7] hover:text-white transition-all duration-300"
+            className="px-6 py-3 bg-white border-2 border-[#4A7FA7] text-[#4A7FA7] font-bold rounded-xl hover:bg-[#4A7FA7] hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg"
           >
             Tutup
           </button>

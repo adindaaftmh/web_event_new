@@ -17,7 +17,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Tambahkan token jika ada (untuk authenticated endpoints)
-    const token = localStorage.getItem('token');
+    // Cek adminToken dulu, kemudian token biasa
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
     if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,6 +39,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Unauthorized - hapus token jika ada
       localStorage.removeItem('token');
+      localStorage.removeItem('adminToken');
     }
     return Promise.reject(error);
   }

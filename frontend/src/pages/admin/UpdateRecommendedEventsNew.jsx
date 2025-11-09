@@ -358,7 +358,7 @@ export default function UpdateRecommendedEvents() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-[#0A1931]">Update Event Menarik</h1>
-                <p className="text-[#4A7FA7]">Kelola tampilan section "Event Menarik di SMKN 4 BOGOR" pada halaman utama</p>
+                <p className="text-[#4A7FA7]">Kelola tampilan section "Event Menarik " pada halaman utama</p>
               </div>
             </div>
             <div className="h-1 w-32 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] rounded-full animate-pulse"></div>
@@ -379,7 +379,7 @@ export default function UpdateRecommendedEvents() {
                   <Layout className="w-6 h-6 text-[#4A7FA7]" />
                   Banner Background Section
                 </h2>
-                <p className="text-sm text-[#4A7FA7] mt-1.5">Kustomisasi banner header "Event Menarik di SMKN 4 BOGOR"</p>
+                <p className="text-sm text-[#4A7FA7] mt-1.5">Kustomisasi banner header "Event Menarik "</p>
               </div>
               <button onClick={() => { 
                 setBannerForm(bannerConfig); 

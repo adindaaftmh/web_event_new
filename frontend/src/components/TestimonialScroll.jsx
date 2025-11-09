@@ -142,12 +142,14 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
 
         try {
           const response = await testimonialService.getAll({
-            per_page: 20,
-            approved: true
+            per_page: 20
           });
+
+          console.log('Testimonial API Response:', response.data);
 
           if (response.data.success) {
             // Map API data to match expected format
+            console.log('Raw testimonial data:', response.data.data);
             const mappedTestimonials = response.data.data.map(item => ({
               id: item.id,
               display_name: item.user?.nama_lengkap || item.user?.name || 'Anonymous',
@@ -160,12 +162,15 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
               event_category: item.event_category || item.event?.judul_kegiatan || 'Event'
             }));
             
+            console.log('Mapped testimonials:', mappedTestimonials);
+            console.log('Final testimonials array:', [...dummyTestimonials, ...mappedTestimonials]);
             setTestimonials([...dummyTestimonials, ...mappedTestimonials]);
           } else {
             // Use dummy data if API fails
             setTestimonials(dummyTestimonials);
           }
         } catch (apiError) {
+          console.error('API Error:', apiError);
           // Use dummy data if API fails
           setTestimonials(dummyTestimonials);
         }
@@ -265,7 +270,7 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
       )}
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style>{`
         @keyframes scroll-left {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }

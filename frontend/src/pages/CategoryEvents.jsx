@@ -3,14 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useEvents } from '../contexts/EventContext';
 import Navbar from '../components/Navbar';
 import oceanBg from "../assets/ocean.jpg";
+import apiClient from '../config/api';
 
 export default function CategoryEvents() {
   const navigate = useNavigate();
   const { category } = useParams();
   const { events, loading } = useEvents();
   const [filteredEvents, setFilteredEvents] = useState([]);
-  const [sortBy, setSortBy] = useState('newest'); // newest, oldest, name
+  const [sortBy, setSortBy] = useState('terdekat'); // terdekat, terlama, termurah, terpopuler
   const [animatedCounts, setAnimatedCounts] = useState({});
+  const [participants, setParticipants] = useState([]);
 
   // Category configuration - All using Edukasi color scheme
   const categoryConfig = {
@@ -70,6 +72,27 @@ export default function CategoryEvents() {
 
   const currentCategory = categoryConfig[category] || categoryConfig['olahraga'];
 
+  // Fetch participants data
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      try {
+        const response = await apiClient.get('/daftar-hadir');
+        if (response.data?.success) {
+          setParticipants(response.data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+      }
+    };
+    fetchParticipants();
+  }, []);
+
+  // Get participant count for an event
+  const getEventParticipantCount = (eventId) => {
+    const filtered = participants.filter(p => p.kegiatan_id === eventId || p.id_kegiatan === eventId);
+    return filtered.length;
+  };
+
   // Filter events by category and scroll to top
   useEffect(() => {
     // Scroll to top when category changes
@@ -88,19 +111,56 @@ export default function CategoryEvents() {
     }
   }, [events, category]);
 
-  // Sort events
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return new Date(b.waktu_mulai) - new Date(a.waktu_mulai);
-      case 'oldest':
-        return new Date(a.waktu_mulai) - new Date(b.waktu_mulai);
-      case 'name':
-        return a.judul_kegiatan.localeCompare(b.judul_kegiatan);
-      default:
-        return 0;
-    }
-  });
+  // Helper to check if event has ended
+  const isEventEndedCheck = (event) => {
+    const now = new Date();
+    const endTime = event.waktu_selesai ? new Date(event.waktu_selesai) : (event.waktu_mulai ? new Date(event.waktu_mulai) : null);
+    if (!endTime) return false;
+    return now > endTime;
+  };
+
+  // Sort events - separate active and ended events
+  const sortedEvents = (() => {
+    // Separate active and ended events
+    const activeEvents = filteredEvents.filter(event => !isEventEndedCheck(event));
+    const endedEvents = filteredEvents.filter(event => isEventEndedCheck(event));
+
+    // Sort active events based on selected filter
+    activeEvents.sort((a, b) => {
+      const now = new Date();
+      
+      switch (sortBy) {
+        case 'terdekat': {
+          const dateA = new Date(a.waktu_mulai || 0);
+          const dateB = new Date(b.waktu_mulai || 0);
+          return dateA - dateB; // Closest first
+        }
+        case 'terlama': {
+          const dateA = new Date(a.waktu_mulai || 0);
+          const dateB = new Date(b.waktu_mulai || 0);
+          return dateB - dateA; // Farthest first
+        }
+        case 'termurah': {
+          const priceA = parseFloat(a.harga_tiket || a.tickets?.[0]?.price || 999999999);
+          const priceB = parseFloat(b.harga_tiket || b.tickets?.[0]?.price || 999999999);
+          return priceA - priceB; // Cheapest first
+        }
+        case 'terpopuler': {
+          const countA = getEventParticipantCount(a.id);
+          const countB = getEventParticipantCount(b.id);
+          return countB - countA; // Most participants first
+        }
+        default:
+          return 0;
+      }
+    });
+
+    // Sort ended events by date (most recent first)
+    endedEvents.sort((a, b) => new Date(b.waktu_mulai || 0) - new Date(a.waktu_mulai || 0));
+
+    // Combine: active events first, then ended events
+    return [...activeEvents, ...endedEvents];
+  })();
 
   // Helper function to format date
   const formatDate = (dateString) => {
@@ -123,37 +183,29 @@ export default function CategoryEvents() {
     }) + " WIB";
   };
 
-  // Animate participant count for visible events
+  // Check if event has ended
+  const isEventEnded = (event) => {
+    const now = new Date();
+    // Check waktu_selesai first, if not available check waktu_mulai
+    const endTime = event.waktu_selesai ? new Date(event.waktu_selesai) : (event.waktu_mulai ? new Date(event.waktu_mulai) : null);
+    
+    if (!endTime) return false;
+    return now > endTime;
+  };
+
+  // Display participant count for visible events (instant, no animation)
   useEffect(() => {
+    if (participants.length === 0 || sortedEvents.length === 0) return;
+    
+    const newCounts = {};
     sortedEvents.forEach((event) => {
-      const targetCount = event.peserta || event.participants || Math.floor(Math.random() * 150) + 50;
+      const count = getEventParticipantCount(event.id);
       const countKey = `event-${event.id}`;
-      
-      if (animatedCounts[countKey] === undefined) {
-        let startTime = null;
-        const duration = 2000;
-        
-        const animate = (currentTime) => {
-          if (!startTime) startTime = currentTime;
-          const progress = Math.min((currentTime - startTime) / duration, 1);
-          
-          const easeOut = 1 - Math.pow(1 - progress, 3);
-          const currentCount = Math.floor(targetCount * easeOut);
-          
-          setAnimatedCounts(prev => ({
-            ...prev,
-            [countKey]: currentCount
-          }));
-          
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          }
-        };
-        
-        requestAnimationFrame(animate);
-      }
+      newCounts[countKey] = count;
     });
-  }, [sortedEvents]);
+    
+    setAnimatedCounts(prev => ({ ...prev, ...newCounts }));
+  }, [sortedEvents, participants]);
 
   return (
     <>
@@ -277,9 +329,10 @@ export default function CategoryEvents() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className={`px-4 py-2 bg-white/90 backdrop-blur-sm border-2 border-${currentCategory.accentColor}/20 rounded-lg text-gray-700 focus:border-${currentCategory.accentColor} focus:outline-none transition-colors shadow-sm`}
               >
-                <option value="newest">Terbaru</option>
-                <option value="oldest">Terlama</option>
-                <option value="name">Nama A-Z</option>
+                <option value="terdekat">Terdekat</option>
+                <option value="terlama">Terlama</option>
+                <option value="termurah">Termurah</option>
+                <option value="terpopuler">Terpopuler</option>
               </select>
             </div>
           </div>
@@ -326,11 +379,17 @@ export default function CategoryEvents() {
           ) : (
             // Events grid
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sortedEvents.map((event, index) => (
+              {sortedEvents.map((event, index) => {
+                const eventEnded = isEventEnded(event);
+                return (
                 <div
                   key={event.id}
-                  onClick={() => navigate(`/event/${event.id}`)}
-                  className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg transition-all duration-500 ease-in-out cursor-pointer group animate-fade-in-up transform hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-[#4A7FA7]/30 hover:border-[#4A7FA7] hover:ring-2 hover:ring-[#4A7FA7]/50"
+                  onClick={() => !eventEnded && navigate(`/event/${event.id}`)}
+                  className={`bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 overflow-hidden shadow-lg transition-all duration-500 ease-in-out group animate-fade-in-up ${
+                    eventEnded 
+                      ? 'opacity-70 grayscale cursor-not-allowed border-gray-300 hover:scale-100' 
+                      : 'cursor-pointer border-[#4A7FA7]/20 hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-[#4A7FA7]/30 hover:border-[#4A7FA7] hover:ring-2 hover:ring-[#4A7FA7]/50'
+                  }`}
                   style={{
                     animationDelay: `${index * 0.15}s`,
                     animationFillMode: 'both',
@@ -378,14 +437,34 @@ export default function CategoryEvents() {
                       <p className="absolute inset-0 flex items-center justify-center text-white/40 text-2xl font-bold group-hover:scale-110 transition-transform duration-500">Flyer</p>
                     </div>
                     
-                    <div className="absolute inset-0 bg-black/10" />
+                    <div className={`absolute inset-0 ${eventEnded ? 'bg-black/50' : 'bg-black/10'}`} />
                     
                     {/* Status Badge */}
                     <div className="absolute top-3 right-3">
-                      <span className="px-3 py-1 bg-[#B3CFE5] text-[#0A1931] text-xs font-bold rounded-full shadow-md">
-                        Tersedia
-                      </span>
+                      {eventEnded ? (
+                        <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                          Berakhir
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Tersedia
+                        </span>
+                      )}
                     </div>
+                    {/* Event Ended Overlay Text */}
+                    {eventEnded && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-black/70 backdrop-blur-sm px-6 py-3 rounded-xl border-2 border-white/30">
+                          <p className="text-white font-bold text-lg drop-shadow-lg">Event Telah Berakhir</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Event Info */}
@@ -469,7 +548,8 @@ export default function CategoryEvents() {
                       })()}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -24,6 +24,7 @@ class Kegiatan extends Model
         'kapasitas_peserta',
         'harga_tiket',
         'kontak_panitia',
+        'penyelenggara',
         'tipe_peserta',
         'tickets',
     ];

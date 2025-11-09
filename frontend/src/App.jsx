@@ -37,6 +37,7 @@ import UpdateInterestingFacts from './pages/admin/UpdateInterestingFacts.jsx';
 import MonthlyActivityReport from './pages/admin/MonthlyActivityReport.jsx';
 import EventParticipantRecap from './pages/admin/EventParticipantRecap.jsx';
 import Messages from './pages/admin/Messages.jsx';
+import AdminProfile from './pages/admin/AdminProfile.jsx';
 
 export default function App() {
   return (
@@ -66,6 +67,7 @@ export default function App() {
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
 
             {/* Event Management Submenu */}
             <Route path="/admin/events/add" element={<AddEvent />} />

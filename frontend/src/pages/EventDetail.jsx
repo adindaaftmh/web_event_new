@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { kegiatanService } from "../services/apiService";
+import apiClient from "../config/api";
 
 export default function EventDetail() {
   const navigate = useNavigate();
@@ -10,6 +11,8 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [participantCount, setParticipantCount] = useState(0);
+  const [totalQuota, setTotalQuota] = useState(0);
+  const [registeredCount, setRegisteredCount] = useState(0);
   const [showFlyerModal, setShowFlyerModal] = useState(false);
   const countRef = useRef(null);
 
@@ -51,6 +54,32 @@ export default function EventDetail() {
     }
   }, [id]);
 
+  // Fetch actual participant data from daftar-hadir
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      try {
+        const response = await apiClient.get('/daftar-hadir');
+        if (response.data?.success) {
+          const allParticipants = response.data.data || [];
+          console.log('All participants:', allParticipants);
+          console.log('Event ID:', id);
+          // Filter participants for this event (use kegiatan_id field)
+          const eventParticipants = allParticipants.filter(
+            participant => participant.kegiatan_id === parseInt(id) || participant.id_kegiatan === parseInt(id)
+          );
+          console.log('Filtered participants for event:', eventParticipants);
+          setRegisteredCount(eventParticipants.length);
+        }
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+      }
+    };
+
+    if (id) {
+      fetchParticipants();
+    }
+  }, [id]);
+
   // Counter animation function
   const animateCounter = (targetValue) => {
     const duration = 2000; // 2 seconds
@@ -82,18 +111,18 @@ export default function EventDetail() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Calculate participant count from tickets
-            let targetCount = 0;
+            // Calculate total quota from tickets
+            let totalCount = 0;
             if (event?.tickets && Array.isArray(event.tickets)) {
-              targetCount = event.tickets.reduce((total, ticket) => {
+              event.tickets.forEach(ticket => {
                 const quota = parseInt(ticket.quota || ticket.kuota || 0, 10);
-                const available = parseInt(ticket.available || ticket.tersedia || 0, 10);
-                const used = quota - available;
-                return total + (isNaN(used) ? 0 : Math.max(used, 0));
-              }, 0);
+                totalCount += (isNaN(quota) ? 0 : Math.max(quota, 0));
+              });
             }
-            // Default to 0 if no valid data
-            animateCounter(targetCount);
+            // Set total quota
+            setTotalQuota(totalCount);
+            // Animate to registered count (actual participants)
+            animateCounter(registeredCount);
             observer.unobserve(entry.target);
           }
         });
@@ -110,7 +139,7 @@ export default function EventDetail() {
         observer.unobserve(countRef.current);
       }
     };
-  }, [event]);
+  }, [event, registeredCount]);
 
   // Mock data structure for fallback
   const mockEvent = {
@@ -746,7 +775,9 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                   </div>
                   <div>
                     <h3 className="text-xs font-semibold text-[#4A7FA7] uppercase tracking-wide">Penyelenggara</h3>
-                    <p className="text-[#0A1931] font-bold text-sm">Event Atraksi Indonesia</p>
+                    <p className="text-[#0A1931] font-bold text-sm">
+                      {eventData.penyelenggara || eventData.organizer || 'Penyelenggara belum tersedia'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -783,7 +814,7 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                 {/* Header Section */}
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-bold text-[#0A1931] mb-1">Peserta Terdaftar</h3>
-                  <p className="text-sm text-[#4A7FA7]/70 font-medium">Total yang bergabung</p>
+                  <p className="text-sm text-[#4A7FA7]/70 font-medium">Jumlah peserta yang sudah mendaftar</p>
                 </div>
 
                 {/* Counter Display with Icon */}
@@ -802,7 +833,11 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                       <span className="text-3xl font-black text-transparent bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] bg-clip-text tabular-nums">
                         {participantCount}
                       </span>
-                      <span className="text-base font-semibold text-[#4A7FA7]">Peserta</span>
+                      <span className="text-2xl font-bold text-[#4A7FA7]/60">/</span>
+                      <span className="text-2xl font-bold text-[#4A7FA7]/80 tabular-nums">
+                        {totalQuota}
+                      </span>
+                      <span className="text-base font-semibold text-[#4A7FA7]">Tempat</span>
                     </div>
                   </div>
                 </div>
@@ -810,7 +845,7 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <div className="flex justify-between text-xs text-[#4A7FA7]/80 mb-2">
-                    <span>Kapasitas Event</span>
+                    <span>Tingkat Pengisian</span>
                     <span className="font-semibold">
                       {(() => {
                         // Calculate total capacity from tickets
@@ -849,11 +884,14 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                 {/* Description */}
                 <div className="text-center">
                   <p className="text-xs text-[#4A7FA7]/80 leading-relaxed">
-                    {participantCount > 0 ? (
-                      <>Bergabunglah dengan <span className="font-semibold text-[#0A1931]">{participantCount}+ peserta</span> lainnya dalam event menarik ini</>
-                    ) : (
-                      <>Jadilah <span className="font-semibold text-[#0A1931]">peserta pertama</span> dalam event menarik ini</>
-                    )}
+                    {(() => {
+                      const remaining = totalQuota - participantCount;
+                      if (remaining > 0) {
+                        return <>Buruan daftar! Masih tersisa <span className="font-semibold text-[#0A1931]">{remaining} tempat</span> untuk event menarik ini</>;
+                      } else {
+                        return <><span className="font-semibold text-[#0A1931]">Kuota sudah penuh!</span> Pantau terus untuk event selanjutnya</>;
+                      }
+                    })()}
                   </p>
                 </div>
               </div>

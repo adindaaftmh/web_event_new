@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import TicketModal from '../components/TicketModal';
+import JigsawCaptcha from '../components/JigsawCaptcha';
 import { kegiatanService, daftarHadirService } from '../services/apiService';
 
 export default function EventRegistration() {
@@ -44,65 +45,8 @@ export default function EventRegistration() {
 
   const [errors, setErrors] = useState({});
   
-  // CAPTCHA state
-  const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, operation: '+' });
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
-  const [captchaError, setCaptchaError] = useState('');
-  const [showCaptcha, setShowCaptcha] = useState(false);
-
-  // Generate CAPTCHA (only addition and subtraction)
-  const generateCaptcha = () => {
-    const operations = ['+', '-'];
-    const operation = operations[Math.floor(Math.random() * operations.length)];
-    let num1, num2;
-    
-    if (operation === '+') {
-      // Addition: numbers between 1-20
-      num1 = Math.floor(Math.random() * 20) + 1;
-      num2 = Math.floor(Math.random() * 20) + 1;
-    } else {
-      // Subtraction: ensure num1 > num2 for positive result
-      num1 = Math.floor(Math.random() * 20) + 10; // 10-30
-      num2 = Math.floor(Math.random() * (num1 - 1)) + 1; // 1 to num1-1
-    }
-    
-    setCaptcha({ num1, num2, operation });
-    setCaptchaAnswer('');
-    setCaptchaError('');
-  };
-  
-  // Calculate correct CAPTCHA answer
-  const getCorrectCaptchaAnswer = () => {
-    const { num1, num2, operation } = captcha;
-    switch (operation) {
-      case '+':
-        return num1 + num2;
-      case '-':
-        return num1 - num2;
-      default:
-        return 0;
-    }
-  };
-  
-  // Validate CAPTCHA
-  const validateCaptcha = () => {
-    const userAnswer = parseInt(captchaAnswer, 10);
-    const correctAnswer = getCorrectCaptchaAnswer();
-    
-    if (isNaN(userAnswer)) {
-      setCaptchaError('Silakan isi jawaban CAPTCHA');
-      return false;
-    }
-    
-    if (userAnswer !== correctAnswer) {
-      setCaptchaError('Jawaban CAPTCHA salah. Silakan coba lagi.');
-      generateCaptcha(); // Generate new CAPTCHA
-      return false;
-    }
-    
-    setCaptchaError('');
-    return true;
-  };
+  // Jigsaw Captcha state
+  const [showCaptchaModal, setShowCaptchaModal] = useState(false);
 
   // Load logged in user from localStorage
   useEffect(() => {
@@ -115,9 +59,6 @@ export default function EventRegistration() {
         console.error('Error parsing user data:', e);
       }
     }
-    
-    // Generate initial CAPTCHA
-    generateCaptcha();
   }, []);
 
   // Fetch event data
@@ -255,19 +196,26 @@ export default function EventRegistration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // If CAPTCHA not shown yet, show modal and prevent submission
-    if (!showCaptcha) {
-      setShowCaptcha(true);
-      return;
+    // Validate form first
+    const tipePeserta = event?.tipe_peserta || 'individu';
+    
+    if (tipePeserta === 'tim') {
+      if (!teamData.namaTeam.trim() || !teamData.ketuaTeam.namaLengkap.trim()) {
+        alert('Nama tim dan data ketua tim wajib diisi');
+        return;
+      }
+    } else {
+      if (!validateForm()) {
+        return;
+      }
     }
     
-    // Validate CAPTCHA if shown
-    if (!validateCaptcha()) {
-      return;
-    }
-    
-    // Close CAPTCHA modal after successful validation
-    setShowCaptcha(false);
+    // Show captcha modal after validation
+    setShowCaptchaModal(true);
+  };
+
+  const handleCaptchaSuccess = async () => {
+    setShowCaptchaModal(false);
     
     const tipePeserta = event?.tipe_peserta || 'individu';
     
@@ -325,7 +273,6 @@ export default function EventRegistration() {
           });
           
           setShowTicketModal(true);
-          generateCaptcha(); // Reset CAPTCHA after successful registration
         } else {
           // Handle error response from backend
           const errorMessage = response.data?.message || 'Gagal menyimpan pendaftaran tim. Silakan coba lagi.';
@@ -394,7 +341,6 @@ export default function EventRegistration() {
             });
             
             setShowTicketModal(true);
-          generateCaptcha(); // Reset CAPTCHA after successful registration
           } else {
             // Handle error response from backend
             const errorMessage = response.data?.message || 'Gagal menyimpan pendaftaran. Silakan coba lagi.';
@@ -1069,7 +1015,7 @@ export default function EventRegistration() {
                 className="w-full px-6 py-4 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-[#4A7FA7]/50 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden group"
               >
                 <span className="relative z-10">
-                  {showCaptcha ? 'Selesaikan CAPTCHA & Daftar' : 'Daftar Sekarang'}
+                  Daftar Sekarang
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-[#1A3D63] to-[#4A7FA7] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
@@ -1078,106 +1024,17 @@ export default function EventRegistration() {
         </div>
       </div>
 
-      {/* CAPTCHA Modal */}
-      {showCaptcha && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 animate-scale-in">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-[#0A1931]">Verifikasi Keamanan</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowCaptcha(false);
-                  setCaptchaAnswer('');
-                  setCaptchaError('');
-                }}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all"
-              >
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <p className="text-gray-600 mb-6">Selesaikan perhitungan matematika berikut untuk melanjutkan pendaftaran:</p>
-            
-            <div className="flex items-center gap-4 mb-6">
-              {/* CAPTCHA Display */}
-              <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-inner">
-                <div className="flex items-center justify-center gap-4">
-                  <span className="text-5xl font-bold text-[#0A1931]">{captcha.num1}</span>
-                  <span className="text-5xl font-bold text-[#4A7FA7]">{captcha.operation}</span>
-                  <span className="text-5xl font-bold text-[#0A1931]">{captcha.num2}</span>
-                  <span className="text-5xl font-bold text-[#4A7FA7]">=</span>
-                  <span className="text-5xl font-bold text-[#1A3D63]">?</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Answer Input */}
-            <div className="mb-4">
-              <input
-                type="number"
-                value={captchaAnswer}
-                onChange={(e) => {
-                  setCaptchaAnswer(e.target.value);
-                  setCaptchaError('');
-                }}
-                placeholder="Masukkan jawaban"
-                autoFocus
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSubmit(e);
-                  }
-                }}
-                className="w-full px-5 py-4 text-center text-3xl font-bold border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4A7FA7] focus:border-[#4A7FA7] transition-all"
-              />
-            </div>
-            
-            {/* Error Message */}
-            {captchaError && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 animate-scale-in">
-                <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <p className="text-sm text-red-700 font-medium">{captchaError}</p>
-              </div>
-            )}
-            
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={generateCaptcha}
-                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
-              <button
-                onClick={() => document.querySelector('form')?.requestSubmit()}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] hover:from-[#4A7FA7]/90 hover:to-[#0A1931] text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                Verifikasi
-              </button>
-            </div>
-            
-            {/* Helper Text */}
-            <p className="mt-4 text-xs text-gray-500 text-center">
-              Verifikasi ini membantu mencegah spam dan pendaftaran otomatis
-            </p>
-          </div>
-        </div>
+      {/* Jigsaw Captcha Modal */}
+      {showCaptchaModal && (
+        <JigsawCaptcha
+          onSuccess={handleCaptchaSuccess}
+          onError={() => {
+            console.log('Captcha verification failed');
+          }}
+          onClose={() => {
+            setShowCaptchaModal(false);
+          }}
+        />
       )}
     </div>
   );

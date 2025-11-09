@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import AdminLayout from "../components/AdminLayout";
 import { useEvents } from "../contexts/EventContext";
+import apiClient from "../config/api";
 
 export default function AdminDashboard() {
   const { events, loading, error } = useEvents();
@@ -16,24 +17,39 @@ export default function AdminDashboard() {
     adminIncome: 0,
     organizerIncome: 0
   });
+  const [participants, setParticipants] = useState([]);
 
   useEffect(() => {
-    if (events.length > 0) {
+    fetchParticipants();
+  }, []);
+
+  useEffect(() => {
+    if (events.length > 0 && participants.length >= 0) {
       calculateDashboardStats();
     }
-  }, [events]);
+  }, [events, participants]);
+
+  const fetchParticipants = async () => {
+    try {
+      const response = await apiClient.get('/daftar-hadir');
+      setParticipants(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      setParticipants([]);
+    }
+  };
 
   const calculateDashboardStats = () => {
-    // Calculate total stats
+    // Calculate total stats from real data
     const totalEvents = events.length;
-    const totalParticipants = events.reduce((sum, event) =>
-      sum + (event.kapasitas_peserta === 'unlimited' ? 0 : parseInt(event.kapasitas_peserta) || 0), 0);
+    const totalParticipants = participants.length; // Real participant count from database
     const activeEvents = events.filter(event => new Date(event.waktu_selesai || event.waktu_mulai) > new Date()).length;
     
-    // Calculate revenue
+    // Calculate revenue based on actual participants
     const totalRevenue = events.reduce((sum, event) => {
       const harga = parseFloat(event.harga_tiket) || 0;
-      return sum + harga;
+      const eventParticipants = participants.filter(p => p.kegiatan_id === event.id).length;
+      return sum + (harga * eventParticipants);
     }, 0);
     
     // Calculate admin income (10% commission)
@@ -42,49 +58,72 @@ export default function AdminDashboard() {
     // Calculate organizer income (90%)
     const organizerIncome = totalRevenue * 0.9;
 
-    // Generate monthly stats (mock data for now, bisa diganti dengan data real dari API)
-    const monthlyStats = [
-      { month: "Jan", events: 12, participants: 450 },
-      { month: "Feb", events: 15, participants: 520 },
-      { month: "Mar", events: 18, participants: 680 },
-      { month: "Apr", events: 14, participants: 510 },
-      { month: "Mei", events: 20, participants: 750 },
-      { month: "Jun", events: 22, participants: 820 },
-      { month: "Jul", events: 19, participants: 710 },
-      { month: "Agu", events: 16, participants: 590 },
-      { month: "Sep", events: 21, participants: 780 },
-      { month: "Okt", events: 17, participants: 630 },
-      { month: "Nov", events: 23, participants: 850 },
-      { month: "Des", events: 25, participants: 920 }
-    ];
+    // Generate monthly stats from real data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const currentYear = new Date().getFullYear();
+    
+    const monthlyStats = months.map((month, index) => {
+      const monthEvents = events.filter(event => {
+        const eventDate = new Date(event.waktu_mulai);
+        return eventDate.getMonth() === index && eventDate.getFullYear() === currentYear;
+      });
 
-    // Get top events by participants (mock data for now)
-    const topEvents = [
-      { name: "Workshop Digital Marketing", participants: 320 },
-      { name: "Seminar Teknologi AI", participants: 285 },
-      { name: "Konser Musik Akustik", participants: 450 },
-      { name: "Pelatihan Public Speaking", participants: 200 },
-      { name: "Festival Seni Budaya", participants: 380 },
-      { name: "Workshop Photography", participants: 150 },
-      { name: "Seminar Entrepreneurship", participants: 250 },
-      { name: "Music Festival 2025", participants: 500 },
-      { name: "Tech Conference", participants: 420 },
-      { name: "Art Exhibition", participants: 180 }
-    ];
+      const monthParticipants = participants.filter(participant => {
+        const event = events.find(e => e.id === participant.kegiatan_id);
+        if (!event) return false;
+        const eventDate = new Date(event.waktu_mulai);
+        return eventDate.getMonth() === index && eventDate.getFullYear() === currentYear;
+      });
 
-    // Generate recent activity from events
-    const recentActivity = events.slice(0, 4).map((event, index) => ({
-      action: index === 0 ? "Event baru ditambahkan" :
-             index === 1 ? "Peserta terdaftar" :
-             index === 2 ? "Event diupdate" : "Event selesai",
-      event: event.judul_kegiatan,
-      time: index === 0 ? "2 jam lalu" :
-            index === 1 ? "3 jam lalu" :
-            index === 2 ? "5 jam lalu" : "1 hari lalu",
-      type: index === 0 ? "create" :
-            index === 1 ? "register" :
-            index === 2 ? "update" : "complete"
-    }));
+      return {
+        month,
+        events: monthEvents.length,
+        participants: monthParticipants.length
+      };
+    });
+
+    // Get top events by real participant count
+    const eventParticipantCounts = events.map(event => {
+      const count = participants.filter(p => p.kegiatan_id === event.id).length;
+      return {
+        name: event.judul_kegiatan,
+        participants: count
+      };
+    });
+
+    const topEvents = eventParticipantCounts
+      .sort((a, b) => b.participants - a.participants)
+      .slice(0, 10);
+
+    // Generate recent activity from real events and participants
+    const sortedEvents = [...events]
+      .sort((a, b) => new Date(b.created_at || b.waktu_mulai) - new Date(a.created_at || a.waktu_mulai))
+      .slice(0, 4);
+
+    const recentActivity = sortedEvents.map((event) => {
+      const participantCount = participants.filter(p => p.kegiatan_id === event.id).length;
+      const eventDate = new Date(event.created_at || event.waktu_mulai);
+      const now = new Date();
+      const diffMs = now - eventDate;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+
+      let timeAgo;
+      if (diffDays > 0) {
+        timeAgo = `${diffDays} hari lalu`;
+      } else if (diffHours > 0) {
+        timeAgo = `${diffHours} jam lalu`;
+      } else {
+        timeAgo = 'Baru saja';
+      }
+
+      return {
+        action: participantCount > 0 ? `${participantCount} peserta terdaftar` : "Event baru ditambahkan",
+        event: event.judul_kegiatan,
+        time: timeAgo,
+        type: participantCount > 50 ? 'register' : 'create'
+      };
+    });
 
     setDashboardData({
       monthlyStats,

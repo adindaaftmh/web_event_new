@@ -35,7 +35,8 @@ class KegiatanSeeder extends Seeder
                 'waktu_berakhir' => Carbon::create(2025, 11, 15, 22, 0, 0),
                 'kapasitas_peserta' => 20,
                 'harga_tiket' => 500000,
-                'kontak_panitia' => '081234567890 (Andi)'
+                'kontak_panitia' => '081234567890 (Andi)',
+                'penyelenggara' => 'Badan Olahraga Mahasiswa Indonesia'
             ],
             
             // Edukasi
@@ -51,7 +52,8 @@ class KegiatanSeeder extends Seeder
                 'waktu_berakhir' => Carbon::create(2025, 11, 20, 16, 0, 0),
                 'kapasitas_peserta' => 500,
                 'harga_tiket' => 150000,
-                'kontak_panitia' => '081234567891 (Budi)'
+                'kontak_panitia' => '081234567891 (Budi)',
+                'penyelenggara' => 'Kementerian Pendidikan dan Kebudayaan'
             ],
             
             // Seni Budaya
@@ -67,7 +69,8 @@ class KegiatanSeeder extends Seeder
                 'waktu_berakhir' => Carbon::create(2025, 12, 10, 21, 0, 0),
                 'kapasitas_peserta' => 200,
                 'harga_tiket' => 75000,
-                'kontak_panitia' => '081234567892 (Citra)'
+                'kontak_panitia' => '081234567892 (Citra)',
+                'penyelenggara' => 'Asosiasi Seniman Muda Nusantara'
             ],
             
             // Hiburan
@@ -83,7 +86,8 @@ class KegiatanSeeder extends Seeder
                 'waktu_berakhir' => Carbon::create(2025, 12, 24, 23, 30, 0),
                 'kapasitas_peserta' => 1000,
                 'harga_tiket' => 250000,
-                'kontak_panitia' => '081234567893 (Dewi)'
+                'kontak_panitia' => '081234567893 (Dewi)',
+                'penyelenggara' => 'Yayasan Pendidikan Anak Bangsa'
             ]
         ];
 

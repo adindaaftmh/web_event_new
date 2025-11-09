@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\KategoriKegiatanController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\DaftarHadirController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\FlyerController;
 use App\Http\Controllers\RecommendedEventController;
+use App\Http\Controllers\ContactMessageController;
 
 
 
@@ -28,6 +30,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getCurrentUser']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('update-profile', [AuthController::class, 'updateProfile']);
+    Route::put('change-password', [AuthController::class, 'changePassword']);
+    Route::delete('delete-account', [AuthController::class, 'deleteAccount']);
+    
+    // User Management Routes (Admin only)
+    Route::get('users', [UserController::class, 'getAllUsers']);
+    Route::get('users/export/excel', [UserController::class, 'exportUsersToExcel']);
+    Route::get('users/{id}', [UserController::class, 'getUserDetail']);
+    Route::patch('users/{id}/status', [UserController::class, 'updateStatus']);
+    Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword']);
 });
 
 // Kategori Kegiatan Routes
@@ -84,5 +95,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('recommended-events/{id}', [RecommendedEventController::class, 'update']);
     Route::delete('recommended-events/{id}', [RecommendedEventController::class, 'destroy']);
     Route::patch('recommended-events/{id}/toggle-active', [RecommendedEventController::class, 'toggleActive']);
+});
+// Contact Messages
+Route::post('/contact-messages', [ContactMessageController::class, 'store']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/contact-messages', [ContactMessageController::class, 'index']);
+    Route::put('/contact-messages/{id}/read', [ContactMessageController::class, 'markAsRead']);
+    Route::post('/contact-messages/{id}/reply', [ContactMessageController::class, 'sendReply']);
+    Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
 });
     

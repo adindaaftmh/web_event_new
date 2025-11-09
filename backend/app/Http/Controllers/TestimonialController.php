@@ -15,7 +15,7 @@ class TestimonialController extends Controller
     {
         try {
             $perPage = $request->get('per_page', 20);
-            $approved = $request->get('approved', true);
+            $approved = $request->get('approved', null);
 
             $query = Testimonial::with(['user', 'event'])
                 ->when($approved, function ($query) {

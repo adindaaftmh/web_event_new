@@ -47,6 +47,7 @@ class KegiatanController extends Controller
             'kapasitas_peserta' => 'nullable|integer|min:1',
             'harga_tiket' => 'nullable|numeric|min:0',
             'kontak_panitia' => 'nullable|string|max:255',
+            'penyelenggara' => 'required|string|max:255',
             'tipe_peserta' => 'nullable|string|in:individu,tim',
             'tickets' => 'nullable|string',
         ]);
@@ -89,6 +90,7 @@ class KegiatanController extends Controller
             'kapasitas_peserta' => $request->kapasitas_peserta,
             'harga_tiket' => $request->harga_tiket,
             'kontak_panitia' => $request->kontak_panitia,
+            'penyelenggara' => $request->penyelenggara,
             'tipe_peserta' => $request->tipe_peserta ?? 'individu',
             'tickets' => $request->tickets,
         ]);
@@ -153,6 +155,9 @@ class KegiatanController extends Controller
             'kapasitas_peserta' => 'nullable|integer|min:1',
             'harga_tiket' => 'nullable|numeric|min:0',
             'kontak_panitia' => 'nullable|string|max:255',
+            'penyelenggara' => 'required|string|max:255',
+            'tipe_peserta' => 'nullable|string|in:individu,tim',
+            'tickets' => 'nullable|string',
         ]);
 
         $flyerPath = $kegiatan->flyer_kegiatan;
@@ -179,6 +184,9 @@ class KegiatanController extends Controller
             'kapasitas_peserta' => $request->kapasitas_peserta,
             'harga_tiket' => $request->harga_tiket,
             'kontak_panitia' => $request->kontak_panitia,
+            'penyelenggara' => $request->penyelenggara,
+            'tipe_peserta' => $request->tipe_peserta ?? $kegiatan->tipe_peserta,
+            'tickets' => $request->tickets ?? $kegiatan->tickets,
         ]);
 
         return response()->json([

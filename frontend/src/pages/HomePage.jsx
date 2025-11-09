@@ -10,9 +10,14 @@ import Navbar from '../components/Navbar';
 import Toast from '../components/Toast';
 import oceanBg from "../assets/ocean.jpg";
 import smkn4Bg from "../assets/smkn4.jpeg";
+import olahragaImg from "../assets/olahraga.jpg";
+import edukasiImg from "../assets/edukasi.jpeg";
+import senibudayaImg from "../assets/senibudaya.jpg";
+import hiburanImg from "../assets/hiburan.jpg";
 import axios from 'axios';
 import { BookOpen, Smile, Palette, Lightbulb, Heart, Edit } from 'lucide-react';
 import { testimonialService } from '../services/apiService';
+import apiClient from '../config/api';
 
 const API_URL = "http://localhost:8000/api";
 
@@ -35,67 +40,102 @@ export default function HomePage() {
   const [showFactModal, setShowFactModal] = useState(false);
   const [selectedFact, setSelectedFact] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [showReviewSuccessPopup, setShowReviewSuccessPopup] = useState(false);
   
   // User authentication and attended events stagte
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [userAttendedEvents, setUserAttendedEvents] = useState([]);
+  const [participants, setParticipants] = useState([]);
   
   const EVENTS_PER_PAGE = 4;
-  const totalEventPages = Math.ceil(events.length / EVENTS_PER_PAGE) || 0;
 
-  // Sort events by waktu_mulai (newest first)
-  const sortedEvents = events.length > 0 ? [...events].sort((a, b) => {
-    return new Date(b.waktu_mulai) - new Date(a.waktu_mulai);
-  }) : [];
+  // Filter event yang belum selesai dan sort by waktu_mulai (upcoming first)
+  const upcomingEvents = events.length > 0 ? [...events]
+    .filter(event => {
+      const endTime = new Date(event.waktu_selesai || event.waktu_mulai);
+      return endTime > new Date(); // Only show events that haven't ended
+    })
+    .sort((a, b) => {
+      return new Date(a.waktu_mulai) - new Date(b.waktu_mulai);
+    }) : [];
 
-  const visibleEvents = sortedEvents.slice(
+  const totalEventPages = Math.ceil(upcomingEvents.length / EVENTS_PER_PAGE) || 0;
+  const sortedEvents = upcomingEvents; // Alias untuk kompatibilitas
+
+  const visibleEvents = upcomingEvents.slice(
     eventsPage * EVENTS_PER_PAGE,
     eventsPage * EVENTS_PER_PAGE + EVENTS_PER_PAGE
   );
 
-  // Animate participant counts when events become visible
+  // Fetch participants from database
   useEffect(() => {
-    if (visibleEvents.length > 0) {
-      visibleEvents.forEach(event => {
-        const targetCount = event.peserta || event.participants || Math.floor(Math.random() * 150) + 50;
-        const countKey = `event-${event.id}`;
-        
-        if (animatedCounts[countKey] === undefined) {
-          let startTime = null;
-          const duration = 2000;
-          
-          const animate = (timestamp) => {
-            if (!startTime) startTime = timestamp;
-            const progress = Math.min((timestamp - startTime) / duration, 1);
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const value = Math.floor(easeOut * targetCount);
-            
-            setAnimatedCounts(prev => ({ ...prev, [countKey]: value }));
-            
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            }
-          };
-          
-          requestAnimationFrame(animate);
-        }
+    const fetchParticipants = async () => {
+      try {
+        const response = await apiClient.get('/daftar-hadir');
+        const participantsData = response.data.data || [];
+        console.log('HomePage - Fetched participants:', participantsData);
+        setParticipants(participantsData);
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+        setParticipants([]);
+      }
+    };
+    fetchParticipants();
+  }, []);
+
+  // Calculate participant count for each event from database
+  const getEventParticipantCount = (eventId) => {
+    if (eventId === 16) {
+      console.log('\n=== Debugging Event 16 ===');
+      console.log('Searching for eventId:', eventId, 'Type:', typeof eventId);
+      console.log('All participants:', participants);
+      
+      participants.forEach((p, index) => {
+        console.log(`Participant ${index + 1}:`, {
+          kegiatan_id: p.kegiatan_id,
+          kegiatan_id_type: typeof p.kegiatan_id,
+          id_kegiatan: p.id_kegiatan,
+          nama: p.nama_lengkap,
+          match_kegiatan_id: p.kegiatan_id === eventId,
+          match_id_kegiatan: p.id_kegiatan === eventId,
+          match_loose: p.kegiatan_id == eventId || p.id_kegiatan == eventId
+        });
       });
     }
-  }, [visibleEvents]);
+    
+    const filtered = participants.filter(p => p.kegiatan_id === eventId || p.id_kegiatan === eventId);
+    
+    if (eventId === 16) {
+      console.log('Filtered result for Event 16:', filtered);
+      console.log('Count:', filtered.length);
+      console.log('=========================\n');
+    }
+    
+    return filtered.length;
+  };
 
-  // Filter popular events (events with more than 100 participants)
-  const popularEvents = [...events].filter(event => {
-    // Assuming each event has a 'peserta' or 'participants' field
-    // If not available, we'll simulate it with a random number for demo
-    const participants = event.peserta || event.participants || Math.floor(Math.random() * 200) + 50;
-    return participants > 100;
-  }).sort((a, b) => {
-    // Sort by participant count (highest first)
-    const aParticipants = a.peserta || a.participants || Math.floor(Math.random() * 200) + 50;
-    const bParticipants = b.peserta || b.participants || Math.floor(Math.random() * 200) + 50;
-    return bParticipants - aParticipants;
-  });
+  // Set participant counts directly - NO ANIMATION for instant display
+  useEffect(() => {
+    if (participants.length === 0 || visibleEvents.length === 0) return;
+    
+    const newCounts = {};
+    visibleEvents.forEach(event => {
+      const count = getEventParticipantCount(event.id);
+      newCounts[`event-${event.id}`] = count;
+    });
+    
+    setAnimatedCounts(prev => ({ ...prev, ...newCounts }));
+  }, [visibleEvents, participants]);
+
+  // Popular events: All events sorted by participant count (highest first)
+  const popularEvents = [...events]
+    .map(event => ({
+      ...event,
+      participantCount: getEventParticipantCount(event.id)
+    }))
+    // Show all events, sorted by participant count (events with participants shown first)
+    .sort((a, b) => b.participantCount - a.participantCount); // Sort by participant count descending
   
   const totalPopularEventPages = Math.ceil(popularEvents.length / EVENTS_PER_PAGE) || 0;
   const visiblePopularEvents = popularEvents.slice(
@@ -103,35 +143,18 @@ export default function HomePage() {
     popularEventsPage * EVENTS_PER_PAGE + EVENTS_PER_PAGE
   );
 
-  // Animate popular events participant counts
+  // Set popular events participant counts directly - NO ANIMATION for instant display
   useEffect(() => {
-    if (visiblePopularEvents.length > 0) {
-      visiblePopularEvents.forEach(event => {
-        const targetCount = event.peserta || event.participants || Math.floor(Math.random() * 200) + 100;
-        const countKey = `event-popular-${event.id}`;
-        
-        if (animatedCounts[countKey] === undefined) {
-          let startTime = null;
-          const duration = 2000;
-          
-          const animate = (timestamp) => {
-            if (!startTime) startTime = timestamp;
-            const progress = Math.min((timestamp - startTime) / duration, 1);
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const value = Math.floor(easeOut * targetCount);
-            
-            setAnimatedCounts(prev => ({ ...prev, [countKey]: value }));
-            
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            }
-          };
-          
-          requestAnimationFrame(animate);
-        }
-      });
-    }
-  }, [visiblePopularEvents]);
+    if (participants.length === 0 || visiblePopularEvents.length === 0) return;
+    
+    const newCounts = {};
+    visiblePopularEvents.forEach(event => {
+      const count = getEventParticipantCount(event.id);
+      newCounts[`event-popular-${event.id}`] = count;
+    });
+    
+    setAnimatedCounts(prev => ({ ...prev, ...newCounts }));
+  }, [visiblePopularEvents, participants, popularEventsPage]);
 
   useEffect(() => {
     setEventsPage(0);
@@ -297,13 +320,21 @@ export default function HomePage() {
       e.preventDefault();
     }
     
+    console.log('=== Submit Review Debug ===');
+    console.log('isLoggedIn:', isLoggedIn);
+    console.log('currentUser:', currentUser);
+    console.log('userAttendedEvents:', userAttendedEvents);
+    console.log('newReview:', newReview);
+    
     // Prevent double submission
     if (isSubmittingReview) {
+      console.log('Already submitting, prevented double submission');
       return;
     }
     
     // Validate user is logged in
     if (!isLoggedIn || !currentUser) {
+      console.log('User not logged in');
       showToast('Anda harus login terlebih dahulu untuk memberikan testimoni', 'warning');
       setTimeout(() => navigate('/login'), 2000);
       return;
@@ -311,13 +342,17 @@ export default function HomePage() {
 
     // Validate user has attended events
     if (userAttendedEvents.length === 0) {
+      console.log('User has no attended events');
       showToast('Anda harus mengikuti event terlebih dahulu sebelum dapat memberikan testimoni', 'warning');
       return;
     }
 
     // Validate form fields
     if (!newReview.eventId || !newReview.comment.trim()) {
-      showToast('Mohon lengkapi semua field', 'error');
+      console.log('Form validation failed - missing fields');
+      console.log('eventId:', newReview.eventId);
+      console.log('comment:', newReview.comment);
+      showToast('Mohon lengkapi semua field (Pilih event dan tulis komentar)', 'error');
       return;
     }
 
@@ -356,7 +391,8 @@ export default function HomePage() {
       const response = await testimonialService.create(reviewData);
       
       if (response.data.success) {
-        showToast('Testimoni berhasil dikirim! Terima kasih atas feedback Anda. Testimoni akan ditinjau oleh admin.', 'success');
+        // Show success popup instead of toast
+        setShowReviewSuccessPopup(true);
         setShowReviewForm(false);
         setNewReview({ rating: 5, comment: '', eventId: '' });
       } else {
@@ -440,7 +476,16 @@ export default function HomePage() {
     });
   };
 
-  // Helper function to format time
+  // Check if event has ended
+  const isEventEnded = (event) => {
+    const now = new Date();
+    // Check waktu_selesai first, if not available check waktu_mulai
+    const endTime = event.waktu_selesai ? new Date(event.waktu_selesai) : (event.waktu_mulai ? new Date(event.waktu_mulai) : null);
+    
+    if (!endTime) return false;
+    return now > endTime;
+  };
+
   const formatTime = (dateString) => {
     if (!dateString) return "TBA";
     const date = new Date(dateString);
@@ -799,14 +844,19 @@ export default function HomePage() {
                   </div>
                 ))
               ) : (
-                visibleEvents.map((event, index) => (
+                visibleEvents.map((event, index) => {
+                  const eventEnded = isEventEnded(event);
+                  return (
                   <div
-                    key={event.id}
-                    onClick={() => handleEventClick(event)}
-                    className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg transition-all duration-500 ease-in-out cursor-pointer group animate-fade-in-up transform hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-[#4A7FA7]/30 hover:border-[#4A7FA7] hover:ring-2 hover:ring-[#4A7FA7]/50"
+                    key={`event-${event.id}-${eventsPage}`}
+                    onClick={() => !eventEnded && handleEventClick(event)}
+                    className={`bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 overflow-hidden shadow-lg transition-all duration-500 ease-in-out group transform ${
+                      eventEnded 
+                        ? 'opacity-70 grayscale cursor-not-allowed border-gray-300 hover:scale-100' 
+                        : 'cursor-pointer border-[#4A7FA7]/20 hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-[#4A7FA7]/30 hover:border-[#4A7FA7] hover:ring-2 hover:ring-[#4A7FA7]/50'
+                    }`}
                     style={{
-                      animationDelay: `${index * 0.15}s`,
-                      animationFillMode: 'both',
+                      animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                       willChange: 'transform, box-shadow'
                     }}
                   >
@@ -842,13 +892,33 @@ export default function HomePage() {
                       <div className="flyer-placeholder absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110" style={{ display: event.flyer_kegiatan ? 'none' : 'flex' }}>
                         <p className="absolute inset-0 flex items-center justify-center text-white/40 text-2xl font-bold group-hover:scale-110 transition-transform duration-500">Flyer</p>
                       </div>
-                      <div className="absolute inset-0 bg-black/10" />
+                      <div className={`absolute inset-0 ${eventEnded ? 'bg-black/50' : 'bg-black/10'}`} />
                       {/* Status Badge */}
                       <div className="absolute top-3 right-3">
-                        <span className="px-3 py-1 bg-[#B3CFE5] text-[#0A1931] text-xs font-bold rounded-full shadow-md">
-                          Tersedia
-                        </span>
+                        {eventEnded ? (
+                          <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            Berakhir
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Tersedia
+                          </span>
+                        )}
                       </div>
+                      {/* Event Ended Overlay Text */}
+                      {eventEnded && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-black/70 backdrop-blur-sm px-6 py-3 rounded-xl border-2 border-white/30">
+                            <p className="text-white font-bold text-lg drop-shadow-lg">Event Telah Berakhir</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Event Info */}
@@ -932,7 +1002,8 @@ export default function HomePage() {
                         })()}
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -1006,14 +1077,19 @@ export default function HomePage() {
                   </div>
                 ))
               ) : (
-                visiblePopularEvents.map((event, index) => (
+                visiblePopularEvents.map((event, index) => {
+                  const eventEnded = isEventEnded(event);
+                  return (
                   <div
-                    key={event.id}
-                    onClick={() => handleEventClick(event)}
-                    className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 border-emerald-500/20 overflow-hidden shadow-lg transition-all duration-500 ease-in-out cursor-pointer group animate-fade-in-up transform hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-emerald-500/30 hover:border-emerald-500 hover:ring-2 hover:ring-emerald-500/50"
+                    key={`event-popular-${event.id}-${popularEventsPage}`}
+                    onClick={() => !eventEnded && handleEventClick(event)}
+                    className={`bg-[#F6FAFD]/90 backdrop-blur-xl rounded-xl border-2 overflow-hidden shadow-lg transition-all duration-500 ease-in-out group transform ${
+                      eventEnded 
+                        ? 'opacity-70 grayscale cursor-not-allowed border-gray-300 hover:scale-100' 
+                        : 'cursor-pointer border-emerald-500/20 hover:scale-105 hover:-translate-y-6 hover:shadow-2xl hover:shadow-emerald-500/30 hover:border-emerald-500 hover:ring-2 hover:ring-emerald-500/50'
+                    }`}
                     style={{
-                      animationDelay: `${index * 0.15}s`,
-                      animationFillMode: 'both',
+                      animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                       willChange: 'transform, box-shadow'
                     }}
                   >
@@ -1049,22 +1125,33 @@ export default function HomePage() {
                       <div className="flyer-placeholder absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110" style={{ display: event.flyer_kegiatan ? 'none' : 'flex' }}>
                         <p className="absolute inset-0 flex items-center justify-center text-white/40 text-2xl font-bold group-hover:scale-110 transition-transform duration-500">Flyer</p>
                       </div>
-                      <div className="absolute inset-0 bg-black/10" />
-                      {/* Popular Badge */}
+                      <div className={`absolute inset-0 ${eventEnded ? 'bg-black/50' : 'bg-black/10'}`} />
+                      {/* Status Badge */}
                       <div className="absolute top-3 right-3">
-                        <span className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          Populer
-                        </span>
+                        {eventEnded ? (
+                          <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            Berakhir
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            Populer
+                          </span>
+                        )}
                       </div>
-                      {/* Participant Count */}
-                      <div className="absolute top-3 left-3">
-                        <span className="px-2 py-1 bg-black/50 text-white text-xs font-medium rounded-full backdrop-blur-sm">
-                          {event.peserta || event.participants || Math.floor(Math.random() * 200) + 100}+ peserta
-                        </span>
-                      </div>
+                      {/* Event Ended Overlay Text */}
+                      {eventEnded && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-black/70 backdrop-blur-sm px-6 py-3 rounded-xl border-2 border-white/30">
+                            <p className="text-white font-bold text-lg drop-shadow-lg">Event Telah Berakhir</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Event Info */}
@@ -1148,7 +1235,8 @@ export default function HomePage() {
                         })()}
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -1191,7 +1279,7 @@ export default function HomePage() {
               className="group relative h-64 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-red-500 to-pink-600"></div>
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800')] bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundImage: `url(${olahragaImg})` }}></div>
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-500"></div>
               <div className="relative h-full flex items-center justify-center">
                 <div className="text-center">
@@ -1214,7 +1302,7 @@ export default function HomePage() {
               className="group relative h-64 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-rose-600"></div>
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800')] bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundImage: `url(${hiburanImg})` }}></div>
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-500"></div>
               <div className="relative h-full flex items-center justify-center">
                 <div className="text-center">
@@ -1237,7 +1325,7 @@ export default function HomePage() {
               className="group relative h-64 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-600"></div>
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800')] bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundImage: `url(${edukasiImg})` }}></div>
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-500"></div>
               <div className="relative h-full flex items-center justify-center">
                 <div className="text-center">
@@ -1260,7 +1348,7 @@ export default function HomePage() {
               className="group relative h-64 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600"></div>
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=800')] bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundImage: `url(${senibudayaImg})` }}></div>
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-500"></div>
               <div className="relative h-full flex items-center justify-center">
                 <div className="text-center">
@@ -1325,7 +1413,7 @@ export default function HomePage() {
 
               {/* Event Cards Grid - Dynamic */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getActiveEvents().map((event) => {
+                {getActiveEvents().map((event, index) => {
                   // Debug: Log event data
                   if (event.flyerImage) {
                     console.log('Event with image:', event.title, '→', event.flyerImage);
@@ -1339,7 +1427,7 @@ export default function HomePage() {
                   
                   return (
                   <div 
-                    key={event.id} 
+                    key={`event-card-${event.id}-${index}`} 
                     onClick={() => {
                       // Check if event has a real eventId that links to actual event
                       if (event.eventId) {
@@ -1755,8 +1843,8 @@ export default function HomePage() {
                   required
                 >
                   <option value="">Pilih event yang telah diikuti</option>
-                  {userAttendedEvents.map(attendedEvent => (
-                    <option key={attendedEvent.id} value={attendedEvent.eventId}>
+                  {userAttendedEvents.map((attendedEvent, index) => (
+                    <option key={`attended-${attendedEvent.eventId}-${index}`} value={attendedEvent.eventId}>
                       {attendedEvent.eventName} - {new Date(attendedEvent.attendedDate).toLocaleDateString('id-ID')}
                     </option>
                   ))}
@@ -1841,10 +1929,97 @@ export default function HomePage() {
       )}
 
       {/* Footer */}
-      <footer className="relative bg-gradient-to-b from-[#0A1931] via-[#1A3D63]/50 to-[#0A1931] border-t border-[#4A7FA7]/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-[#B3CFE5]/70 text-sm">
-            <p>© 2025 Event Atraksi. All rights reserved.</p>
+      <footer className="relative bg-gradient-to-b from-[#0A1931] via-[#1A3D63] to-[#0A1931] border-t border-[#4A7FA7]/30 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-[#4A7FA7] to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-[#B3CFE5] to-transparent rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Main Footer Content */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {/* Brand Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-white/25 to-white/15 backdrop-blur-xl rounded-lg flex items-center justify-center border border-white/40 shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                  </svg>
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="text-lg font-bold text-white tracking-wide">DYNOTIX</h3>
+                  <span className="text-white/70 text-[10px] font-medium tracking-wider">EVENT PLATFORM</span>
+                </div>
+              </div>
+              <p className="text-[#B3CFE5]/80 text-xs mb-3 leading-relaxed">
+                Platform terpercaya untuk menemukan dan mendaftar berbagai event menarik. Bergabunglah dengan komunitas kami dan jangan lewatkan pengalaman tak terlupakan.
+              </p>
+            </div>
+
+            {/* Contact Info */}
+            <div>
+              <h4 className="text-white font-bold mb-3 text-xs uppercase tracking-wider">Kontak</h4>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2 text-[#B3CFE5]/80 text-xs">
+                  <svg className="w-4 h-4 text-[#4A7FA7] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Jl. Contoh Alamat No. 123, Kota, Indonesia</span>
+                </li>
+                <li className="flex items-start gap-2 text-[#B3CFE5]/80 text-xs">
+                  <svg className="w-4 h-4 text-[#4A7FA7] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>info@dynotix.com</span>
+                </li>
+                <li className="flex items-start gap-2 text-[#B3CFE5]/80 text-xs">
+                  <svg className="w-4 h-4 text-[#4A7FA7] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span>+62 812-3456-7890</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Social Media */}
+            <div>
+              <h4 className="text-white font-bold mb-3 text-xs uppercase tracking-wider">Ikuti Kami</h4>
+              <p className="text-[#B3CFE5]/80 text-xs mb-3">
+                Tetap terhubung untuk update event terbaru
+              </p>
+              <div className="flex gap-2">
+                <a href="#" className="w-8 h-8 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </a>
+                <a href="#" className="w-8 h-8 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.40s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </a>
+                <a href="#" className="w-8 h-8 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417a9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                  </svg>
+                </a>
+                <a href="#" className="w-8 h-8 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-[#4A7FA7]/20 pt-4">
+            <p className="text-[#B3CFE5]/70 text-xs text-center">
+              © 2025 <span className="font-semibold text-[#B3CFE5]">DYNOTIX Event Platform</span>. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
@@ -1857,6 +2032,65 @@ export default function HomePage() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Review Success Popup Modal */}
+      {showReviewSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform animate-scale-in">
+            {/* Success Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Success Message */}
+            <h3 className="text-2xl font-bold text-gray-800 text-center mb-3">
+              Testimoni Sudah Terkirim!
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              Terima kasih atas testimoni Anda. Ulasan Anda akan segera ditinjau oleh tim kami.
+            </p>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setShowReviewSuccessPopup(false)}
+              className="w-full px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white rounded-xl font-bold hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] duration-300"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 }

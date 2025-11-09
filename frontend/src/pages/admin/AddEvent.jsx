@@ -8,11 +8,11 @@ export default function AddEvent() {
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     judul_kegiatan: "",
+    penyelenggara: "",
     lokasi_kegiatan: "",
     waktu_mulai: "",
     waktu_selesai: "",
     flyer_kegiatan: null,
-    sertifikat_kegiatan: null,
     deskripsi_kegiatan: "",
     kategori: { nama_kategori: "" },
     kapasitas_peserta: "",
@@ -77,8 +77,8 @@ export default function AddEvent() {
       console.log('Form Data:', formData);
 
       // Validate form
-      if (!formData.judul_kegiatan || !formData.lokasi_kegiatan || !formData.waktu_mulai) {
-        alert("Mohon lengkapi semua field yang wajib diisi (Judul, Lokasi, Waktu Mulai)");
+      if (!formData.judul_kegiatan || !formData.penyelenggara || !formData.lokasi_kegiatan || !formData.waktu_mulai) {
+        alert("Mohon lengkapi semua field yang wajib diisi (Judul, Penyelenggara, Lokasi, Waktu Mulai)");
         return;
       }
 
@@ -101,11 +101,11 @@ export default function AddEvent() {
       const submitData = {
         kategori: formData.kategori.nama_kategori,
         judul_kegiatan: formData.judul_kegiatan,
+        penyelenggara: formData.penyelenggara,
         lokasi_kegiatan: formData.lokasi_kegiatan,
         waktu_mulai: formData.waktu_mulai,
         waktu_selesai: formData.waktu_selesai || null,
         flyer_kegiatan: formData.flyer_kegiatan,
-        sertifikat_kegiatan: formData.sertifikat_kegiatan,
         deskripsi_kegiatan: formData.deskripsi_kegiatan || '',
         kapasitas_peserta: formData.unlimitedParticipants ? null : (formData.kapasitas_peserta || null),
         harga_tiket: formData.isFree ? 0 : (formData.harga_tiket || 0),
@@ -122,11 +122,11 @@ export default function AddEvent() {
       // Reset form
       setFormData({
         judul_kegiatan: "",
+        penyelenggara: "",
         lokasi_kegiatan: "",
         waktu_mulai: "",
         waktu_selesai: "",
         flyer_kegiatan: null,
-        sertifikat_kegiatan: null,
         deskripsi_kegiatan: "",
         kategori: { nama_kategori: "" },
         kapasitas_peserta: "",
@@ -153,7 +153,7 @@ export default function AddEvent() {
         ...prev,
         kategori: { nama_kategori: value }
       }));
-    } else if (field === 'flyer_kegiatan' || field === 'sertifikat_kegiatan') {
+    } else if (field === 'flyer_kegiatan') {
       setFormData(prev => ({
         ...prev,
         [field]: value
@@ -254,6 +254,10 @@ export default function AddEvent() {
             {formData.kategori?.nama_kategori || 'Kategori'}
           </span>
         </div>
+
+        <p className="text-sm font-semibold text-[#4A7FA7] mb-3">
+          {formData.penyelenggara || 'Nama penyelenggara belum diisi'}
+        </p>
 
         <div className="space-y-2 text-sm text-gray-600 mb-4">
           <div className="flex items-center gap-2">
@@ -371,6 +375,46 @@ export default function AddEvent() {
           {/* Form */}
           <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Flyer Upload - Priority Field */}
+              <div>
+                <label className="block text-sm font-semibold text-[#0A1931] mb-2">
+                  Upload Flyer <span className="text-red-500">*</span>
+                </label>
+                <div className="border-2 border-dashed border-[#4A7FA7]/30 rounded-xl p-6 text-center hover:border-[#4A7FA7]/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleInputChange('flyer_kegiatan', e.target.files[0])}
+                    className="hidden"
+                    id="flyer-upload"
+                    required
+                  />
+                  <label htmlFor="flyer-upload" className="cursor-pointer">
+                    {formData.flyer_kegiatan ? (
+                      <div className="space-y-3">
+                        <img
+                          src={URL.createObjectURL(formData.flyer_kegiatan)}
+                          alt="Flyer Preview"
+                          className="w-32 h-20 object-cover rounded-lg mx-auto border-2 border-[#4A7FA7]/20"
+                        />
+                        <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk mengganti flyer</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <svg className="w-12 h-12 text-[#4A7FA7]/50 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk upload flyer</p>
+                        <p className="text-xs text-gray-500">JPG, PNG, WEBP (Max 5MB)</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+                <p className="text-xs text-[#4A7FA7] mt-2 italic">
+                  * Upload flyer terlebih dahulu sebagai preview utama event
+                </p>
+              </div>
+
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -383,6 +427,20 @@ export default function AddEvent() {
                     onChange={(e) => handleInputChange('judul_kegiatan', e.target.value)}
                     className="w-full px-4 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors placeholder-[#4A7FA7]/50"
                     placeholder="Masukkan judul kegiatan"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#0A1931] mb-2">
+                    Penyelenggara Event <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.penyelenggara}
+                    onChange={(e) => handleInputChange('penyelenggara', e.target.value)}
+                    className="w-full px-4 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors placeholder-[#4A7FA7]/50"
+                    placeholder="Nama organisasi atau instansi penyelenggara"
                     required
                   />
                 </div>
@@ -766,86 +824,6 @@ export default function AddEvent() {
                     <p className="text-xs text-gray-400 mt-1">Klik tombol "Tambah Tiket" untuk menambah pilihan tiket</p>
                   </div>
                 )}
-              </div>
-
-              {/* Flyer & Certificate Upload */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Flyer Upload */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#0A1931] mb-2">
-                    Upload Flyer <span className="text-red-500">*</span>
-                  </label>
-                  <div className="border-2 border-dashed border-[#4A7FA7]/30 rounded-xl p-6 text-center hover:border-[#4A7FA7]/50 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleInputChange('flyer_kegiatan', e.target.files[0])}
-                      className="hidden"
-                      id="flyer-upload"
-                      required
-                    />
-                    <label htmlFor="flyer-upload" className="cursor-pointer">
-                      {formData.flyer_kegiatan ? (
-                        <div className="space-y-3">
-                          <img
-                            src={URL.createObjectURL(formData.flyer_kegiatan)}
-                            alt="Flyer Preview"
-                            className="w-32 h-20 object-cover rounded-lg mx-auto border-2 border-[#4A7FA7]/20"
-                          />
-                          <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk mengganti flyer</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <svg className="w-12 h-12 text-[#4A7FA7]/50 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk upload flyer</p>
-                          <p className="text-xs text-gray-500">JPG, PNG, WEBP (Max 5MB)</p>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
-
-                {/* Certificate Template Upload */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#0A1931] mb-2">
-                    Upload Template Sertifikat
-                  </label>
-                  <div className="border-2 border-dashed border-[#4A7FA7]/30 rounded-xl p-6 text-center hover:border-[#4A7FA7]/50 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => handleInputChange('sertifikat_kegiatan', e.target.files[0])}
-                      className="hidden"
-                      id="certificate-upload"
-                    />
-                    <label htmlFor="certificate-upload" className="cursor-pointer">
-                      {formData.sertifikat_kegiatan ? (
-                        <div className="space-y-3">
-                          <div className="w-32 h-20 flex items-center justify-center mx-auto bg-[#4A7FA7]/10 rounded-lg border-2 border-[#4A7FA7]/20">
-                            <svg className="w-10 h-10 text-[#4A7FA7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          </div>
-                          <p className="text-[#4A7FA7] font-semibold text-sm">{formData.sertifikat_kegiatan.name}</p>
-                          <p className="text-xs text-gray-500">Klik untuk mengganti</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <svg className="w-12 h-12 text-[#4A7FA7]/50 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk upload sertifikat</p>
-                          <p className="text-xs text-gray-500">JPG, PNG, PDF (Max 5MB)</p>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                  <p className="text-xs text-[#4A7FA7] mt-2 italic">
-                    *Opsional: Upload template sertifikat untuk peserta
-                  </p>
-                </div>
               </div>
 
               {/* Description */}

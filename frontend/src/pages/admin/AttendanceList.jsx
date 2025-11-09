@@ -9,6 +9,8 @@ export default function AttendanceList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // all, hadir, tidak_hadir
+  const [eventSearchTerm, setEventSearchTerm] = useState('');
+  const [showEventDropdown, setShowEventDropdown] = useState(false);
 
   // Fetch all events
   useEffect(() => {
@@ -54,6 +56,8 @@ export default function AttendanceList() {
           status_kehadiran: p.status_kehadiran,
           waktu_kehadiran: p.waktu_absen,
           ticket: p.tiket_dipilih,
+          jumlah_tiket: p.jumlah_tiket || 1,
+          total_harga: p.total_harga || 0,
           tipe_peserta: p.tipe_peserta,
           nama_tim: p.nama_tim,
           status_verifikasi: p.status_verifikasi
@@ -107,9 +111,113 @@ export default function AttendanceList() {
       : 0
   };
 
+  // Filter events for search - show all if search is empty
+  const filteredEvents = events.filter(event => {
+    if (!eventSearchTerm || eventSearchTerm.trim() === '') return true;
+    const searchLower = eventSearchTerm.toLowerCase();
+    return event.judul_kegiatan.toLowerCase().includes(searchLower) ||
+           event.lokasi_kegiatan?.toLowerCase().includes(searchLower);
+  });
+
+  const handleEventSelect = (event) => {
+    setSelectedEvent(event);
+    setEventSearchTerm(event ? event.judul_kegiatan : '');
+    setShowEventDropdown(false);
+  };
+
+  const exportToCSV = () => {
+    if (!selectedEvent || filteredParticipants.length === 0) {
+      alert('Tidak ada data untuk diekspor');
+      return;
+    }
+
+    const headers = [
+      'No',
+      'ID',
+      'Nama Lengkap',
+      'Email',
+      'No. Telepon',
+      'Tiket Dipilih',
+      'Jumlah Tiket',
+      'Harga Tiket',
+      'Total Harga',
+      'Pendidikan Terakhir',
+      'Status Kehadiran',
+      'Waktu Kehadiran',
+      'Tipe Peserta',
+      'Nama Tim'
+    ];
+
+    const csvRows = [
+      headers.join(','),
+      ...filteredParticipants.map((participant, index) => {
+        const hargaTiket = participant.total_harga && participant.jumlah_tiket 
+          ? (parseFloat(participant.total_harga) / participant.jumlah_tiket).toFixed(0)
+          : participant.total_harga || '0';
+        const totalHarga = parseFloat(participant.total_harga) || 0;
+        const statusKehadiran = participant.status_kehadiran === 'hadir' ? 'Hadir' : 'Tidak Hadir';
+        const waktuKehadiran = participant.waktu_kehadiran 
+          ? new Date(participant.waktu_kehadiran).toLocaleString('id-ID')
+          : '-';
+        const tipePeserta = participant.tipe_peserta === 'tim' ? 'Tim' : 'Individu';
+
+        return [
+          index + 1,
+          participant.id,
+          `"${participant.namaLengkap || ''}"`,
+          `"${participant.email || ''}"`,
+          `"${participant.nomorTelepon || ''}"`,
+          `"${participant.ticket || 'General'}"`,
+          participant.jumlah_tiket || 1,
+          hargaTiket,
+          totalHarga,
+          `"${participant.pendidikanTerakhir || ''}"`,
+          statusKehadiran,
+          waktuKehadiran,
+          tipePeserta,
+          `"${participant.nama_tim || ''}"`
+        ].join(',');
+      })
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    const eventSlug = selectedEvent.judul_kegiatan.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filename = `daftar_hadir_${eventSlug}_${dateStr}.csv`;
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.event-selector-container')) {
+        setShowEventDropdown(false);
+      }
+    };
+
+    if (showEventDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEventDropdown]);
+
   return (
     <AdminLayout>
-      <div className="min-h-screen relative bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 overflow-hidden">
+      <div className="min-h-screen relative bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40">
         {/* Animated Background */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-20 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/25 to-indigo-500/20 rounded-full animate-pulse"></div>
@@ -132,34 +240,96 @@ export default function AttendanceList() {
                 <p className="text-[#4A7FA7]">Kelola kehadiran peserta event</p>
               </div>
             </div>
+            {selectedEvent && (
+              <button
+                onClick={exportToCSV}
+                className="px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+              </button>
+            )}
           </div>
 
-          {/* Event Selector */}
-          <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
+          {/* Event Selector with Search */}
+          <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 mb-6 event-selector-container relative z-50" style={{ isolation: 'isolate' }}>
             <label className="block text-sm font-bold text-[#0A1931] mb-3">
               Pilih Event
             </label>
-            <select
-              value={selectedEvent?.id || ''}
+            <div className="relative" style={{ zIndex: 100 }}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={selectedEvent ? selectedEvent.judul_kegiatan : eventSearchTerm}
               onChange={(e) => {
-                const event = events.find(ev => ev.id === parseInt(e.target.value));
-                setSelectedEvent(event);
-              }}
-              className="w-full px-4 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors"
-            >
-              <option value="">-- Pilih Event --</option>
-              {events.map(event => (
-                <option key={event.id} value={event.id}>
-                  {event.judul_kegiatan} - {new Date(event.waktu_mulai).toLocaleDateString('id-ID')}
-                </option>
-              ))}
-            </select>
+                    setEventSearchTerm(e.target.value);
+                    setSelectedEvent(null); // Clear selection when typing
+                    setShowEventDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (!selectedEvent) {
+                      setShowEventDropdown(true);
+                      // Show all events if search is empty
+                      if (!eventSearchTerm) {
+                        setEventSearchTerm('');
+                      }
+                    }
+                  }}
+                  placeholder="Cari atau pilih event..."
+                  className="w-full pl-10 pr-10 py-3 bg-white border-2 border-[#4A7FA7]/20 rounded-xl text-[#0A1931] focus:border-[#4A7FA7] focus:outline-none transition-colors relative z-10"
+                  readOnly={!!selectedEvent}
+                />
+                <svg className="w-5 h-5 text-[#4A7FA7] absolute left-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {selectedEvent && (
+                  <button
+                    onClick={() => {
+                      setSelectedEvent(null);
+                      setEventSearchTerm('');
+                      setShowEventDropdown(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-20"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Dropdown Results */}
+              {showEventDropdown && !selectedEvent && (
+                <div className="absolute top-full left-0 right-0 z-[9999] mt-2 bg-white border-2 border-[#4A7FA7]/20 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style={{ position: 'absolute' }}>
+                  {filteredEvents.length > 0 ? (
+                    filteredEvents.map(event => (
+                      <button
+                        key={event.id}
+                        onClick={() => handleEventSelect(event)}
+                        className="w-full px-4 py-3 text-left hover:bg-[#4A7FA7]/10 transition-colors border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-semibold text-[#0A1931]">{event.judul_kegiatan}</div>
+                        <div className="text-sm text-[#4A7FA7]">
+                          {new Date(event.waktu_mulai).toLocaleDateString('id-ID')} • {event.lokasi_kegiatan}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                      Tidak ada event yang ditemukan
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {selectedEvent && (
             <>
               {/* Statistics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 relative z-10">
                 <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 group hover:scale-105">
                   <div className="p-6">
                     <div className="flex items-center justify-between">
@@ -278,6 +448,7 @@ export default function AttendanceList() {
                         <th className="px-6 py-4 text-left text-sm font-bold">Email</th>
                         <th className="px-6 py-4 text-left text-sm font-bold">No. Telepon</th>
                         <th className="px-6 py-4 text-left text-sm font-bold">Tiket</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold">Harga Tiket</th>
                         <th className="px-6 py-4 text-left text-sm font-bold">Pendidikan</th>
                         <th className="px-6 py-4 text-center text-sm font-bold">Status</th>
                         <th className="px-6 py-4 text-center text-sm font-bold">Waktu Kehadiran</th>
@@ -300,9 +471,34 @@ export default function AttendanceList() {
                             <td className="px-6 py-4 text-sm text-[#4A7FA7]">{participant.email}</td>
                             <td className="px-6 py-4 text-sm text-[#0A1931]">{participant.nomorTelepon}</td>
                             <td className="px-6 py-4">
+                              <div>
                               <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                                {participant.ticket}
+                                  {participant.ticket || 'General'}
+                                </span>
+                                {participant.jumlah_tiket > 1 && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    ({participant.jumlah_tiket} tiket)
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              {participant.total_harga && parseFloat(participant.total_harga) > 0 ? (
+                                <div className="inline-block text-right">
+                                  <span className="font-bold text-[#0A1931] text-sm">
+                                    Rp {parseInt(participant.total_harga).toLocaleString('id-ID')}
+                                  </span>
+                                  {participant.jumlah_tiket > 1 && (
+                                    <span className="text-xs text-gray-500 ml-1">
+                                      ({participant.jumlah_tiket}x @ Rp {parseInt(participant.total_harga / participant.jumlah_tiket).toLocaleString('id-ID')})
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="inline-block px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold text-xs whitespace-nowrap">
+                                  GRATIS
                               </span>
+                              )}
                             </td>
                             <td className="px-6 py-4 text-sm text-[#0A1931]">{participant.pendidikanTerakhir}</td>
                             <td className="px-6 py-4 text-center">
@@ -351,7 +547,7 @@ export default function AttendanceList() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="9" className="px-6 py-12 text-center">
+                          <td colSpan="10" className="px-6 py-12 text-center">
                             <div className="flex flex-col items-center justify-center text-[#4A7FA7]">
                               <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -367,15 +563,6 @@ export default function AttendanceList() {
                 </div>
               </div>
 
-              {/* Export Button */}
-              <div className="mt-6 flex justify-end">
-                <button className="px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export ke Excel
-                </button>
-              </div>
             </>
           )}
 

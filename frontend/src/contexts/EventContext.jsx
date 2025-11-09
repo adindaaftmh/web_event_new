@@ -10,6 +10,42 @@ export const EventProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const transformEvent = (event) => {
+    let tickets = [];
+
+    if (Array.isArray(event.tickets)) {
+      tickets = event.tickets;
+    } else if (typeof event.tickets === 'string' && event.tickets.trim() !== '') {
+      try {
+        tickets = JSON.parse(event.tickets);
+      } catch (parseError) {
+        console.warn('Gagal mengonversi data tiket kegiatan:', parseError);
+      }
+    }
+
+    const flyerUrl = event.flyer_url
+      || (event.flyer_kegiatan && (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')
+        ? event.flyer_kegiatan
+        : `http://localhost:8000/storage/${event.flyer_kegiatan}`));
+
+    return {
+      id: event.id,
+      judul_kegiatan: event.judul_kegiatan,
+      lokasi_kegiatan: event.lokasi_kegiatan,
+      waktu_mulai: event.waktu_mulai,
+      waktu_selesai: event.waktu_berakhir,
+      flyer_kegiatan: flyerUrl || null,
+      deskripsi_kegiatan: event.deskripsi_kegiatan,
+      kategori: event.kategori ? { nama_kategori: event.kategori.nama_kategori } : { nama_kategori: '' },
+      kapasitas_peserta: event.kapasitas_peserta,
+      harga_tiket: event.harga_tiket,
+      kontak_panitia: event.kontak_panitia,
+      penyelenggara: event.penyelenggara || '',
+      tipe_peserta: event.tipe_peserta || 'individu',
+      tickets,
+    };
+  };
+
   // Load events from API on mount
   useEffect(() => {
     loadEvents();
@@ -23,19 +59,7 @@ export const EventProvider = ({ children }) => {
 
       if (response.data?.success) {
         // Transform API response to match frontend expectations
-        const transformedEvents = response.data.data.map(event => ({
-          id: event.id,
-          judul_kegiatan: event.judul_kegiatan,
-          lokasi_kegiatan: event.lokasi_kegiatan,
-          waktu_mulai: event.waktu_mulai,
-          waktu_selesai: event.waktu_berakhir,
-          flyer_kegiatan: event.flyer_kegiatan ? `http://localhost:8000/storage/${event.flyer_kegiatan}` : null,
-          deskripsi_kegiatan: event.deskripsi_kegiatan,
-          kategori: event.kategori ? { nama_kategori: event.kategori.nama_kategori } : { nama_kategori: '' },
-          kapasitas_peserta: event.kapasitas_peserta,
-          harga_tiket: event.harga_tiket,
-          kontak_panitia: event.kontak_panitia,
-        }));
+        const transformedEvents = response.data.data.map(transformEvent);
         setEvents(transformedEvents);
       } else {
         setError('Failed to load events');
@@ -67,19 +91,7 @@ export const EventProvider = ({ children }) => {
 
       if (response.data?.success) {
         // Transform the created event back to frontend format
-        const createdEvent = {
-          id: response.data.data.id,
-          judul_kegiatan: response.data.data.judul_kegiatan,
-          lokasi_kegiatan: response.data.data.lokasi_kegiatan,
-          waktu_mulai: response.data.data.waktu_mulai,
-          waktu_selesai: response.data.data.waktu_berakhir,
-          flyer_kegiatan: response.data.data.flyer_kegiatan ? `http://localhost:8000/storage/${response.data.data.flyer_kegiatan}` : null,
-          deskripsi_kegiatan: response.data.data.deskripsi_kegiatan,
-          kategori: response.data.data.kategori ? { nama_kategori: response.data.data.kategori.nama_kategori } : { nama_kategori: '' },
-          kapasitas_peserta: response.data.data.kapasitas_peserta,
-          harga_tiket: response.data.data.harga_tiket,
-          kontak_panitia: response.data.data.kontak_panitia,
-        };
+        const createdEvent = transformEvent(response.data.data);
 
         setEvents(prev => [...prev, createdEvent]);
         return createdEvent;
@@ -98,19 +110,7 @@ export const EventProvider = ({ children }) => {
 
       if (response.data?.success) {
         // Transform the updated event back to frontend format
-        const updatedEventData = {
-          id: response.data.data.id,
-          judul_kegiatan: response.data.data.judul_kegiatan,
-          lokasi_kegiatan: response.data.data.lokasi_kegiatan,
-          waktu_mulai: response.data.data.waktu_mulai,
-          waktu_selesai: response.data.data.waktu_berakhir,
-          flyer_kegiatan: response.data.data.flyer_kegiatan ? `http://localhost:8000/storage/${response.data.data.flyer_kegiatan}` : null,
-          deskripsi_kegiatan: response.data.data.deskripsi_kegiatan,
-          kategori: response.data.data.kategori ? { nama_kategori: response.data.data.kategori.nama_kategori } : { nama_kategori: '' },
-          kapasitas_peserta: response.data.data.kapasitas_peserta,
-          harga_tiket: response.data.data.harga_tiket,
-          kontak_panitia: response.data.data.kontak_panitia,
-        };
+        const updatedEventData = transformEvent(response.data.data);
 
         setEvents(prev => prev.map(event =>
           event.id === id ? updatedEventData : event
@@ -158,19 +158,7 @@ export const EventProvider = ({ children }) => {
 
       if (response.data?.success) {
         // Transform the search results to frontend format
-        const searchResults = response.data.data.map(event => ({
-          id: event.id,
-          judul_kegiatan: event.judul_kegiatan,
-          lokasi_kegiatan: event.lokasi_kegiatan,
-          waktu_mulai: event.waktu_mulai,
-          waktu_selesai: event.waktu_berakhir,
-          flyer_kegiatan: event.flyer_kegiatan ? `http://localhost:8000/storage/${event.flyer_kegiatan}` : null,
-          deskripsi_kegiatan: event.deskripsi_kegiatan,
-          kategori: event.kategori ? { nama_kategori: event.kategori.nama_kategori } : { nama_kategori: '' },
-          kapasitas_peserta: event.kapasitas_peserta,
-          harga_tiket: event.harga_tiket,
-          kontak_panitia: event.kontak_panitia,
-        }));
+        const searchResults = response.data.data.map(transformEvent);
 
         return searchResults;
       } else {

@@ -103,16 +103,6 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
           )
         },
         { 
-          id: "list-events", 
-          name: "Daftar Kegiatan", 
-          path: "/admin/events/list",
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-          )
-        },
-        { 
           id: "event-recap", 
           name: "Rekap Kegiatan", 
           path: "/admin/events/recap",
@@ -171,22 +161,12 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           )
-        },
-        { 
-          id: "export-certificates", 
-          name: "Ekspor Sertifikat", 
-          path: "/admin/certificates/export",
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          )
         }
       ]
     },
     {
       id: "settings",
-      name: "Pengaturan",
+      name: "Pengaturan Tampilan",
       icon: <Icons.FaCog />,
       path: "/admin/settings",
       hasSubmenu: true,
@@ -360,7 +340,11 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
           {/* Profile Button */}
           <button
             onClick={() => navigate("/admin/profile")}
-            className={`w-full flex items-center transition-all duration-200 ease-in-out rounded-lg text-[#4A7FA7] hover:bg-blue-50 hover:text-[#1A3D63] border border-blue-200 hover:border-blue-300 transform-gpu will-change-transform cursor-pointer hover:scale-105 active:scale-95 active:translate-y-0.5 hover:shadow-md active:bg-blue-100 ${
+            className={`w-full flex items-center transition-all duration-200 ease-in-out rounded-lg border transform-gpu will-change-transform cursor-pointer hover:scale-105 active:scale-95 active:translate-y-0.5 hover:shadow-md ${
+              location.pathname === '/admin/profile'
+                ? 'bg-[#4A7FA7] text-white border-[#4A7FA7] shadow-lg'
+                : 'text-[#4A7FA7] hover:bg-blue-50 hover:text-[#1A3D63] border-blue-200 hover:border-blue-300 active:bg-blue-100'
+            } ${
               isExpanded ? 'gap-3 px-4 py-3' : 'px-2 py-3 justify-center'
             }`}
             title={!isExpanded ? 'Profile' : ''}

@@ -119,9 +119,17 @@ export const kegiatanService = {
     // Add other fields
     Object.keys(data).forEach(key => {
       if (key !== 'flyer_kegiatan' && data[key] !== null && data[key] !== undefined) {
-        formData.append(key, data[key]);
+        if (typeof data[key] === 'object' && !Array.isArray(data[key])) {
+          formData.append(key, data[key]);
+        } else if (Array.isArray(data[key])) {
+          formData.append(key, JSON.stringify(data[key]));
+        } else {
+          formData.append(key, data[key]);
+        }
       }
     });
+
+    formData.append('_method', 'PUT');
 
     return fileUploadClient.post(`/kegiatan/${id}`, formData, {
       headers: {
@@ -189,6 +197,18 @@ export const userService = {
   // Logout
   logout: () => apiClient.post('/logout'),
 
+  // Get all users (admin only)
+  getAllUsers: () => apiClient.get('/users'),
+
+  // Update user status (admin only)
+  updateUserStatus: (userId, status) => apiClient.patch(`/users/${userId}/status`, { status }),
+
+  // Reset user password (admin only)
+  resetPassword: (userId, password) => apiClient.post(`/users/${userId}/reset-password`, { password }),
+
+  // Export users to Excel (admin only)
+  exportUsersToExcel: () => apiClient.get('/users/export/excel', { responseType: 'blob' }),
+
   // Update profile (dengan support file upload)
   updateProfile: async (data) => {
     try {
@@ -205,6 +225,9 @@ export const userService = {
       throw error;
     }
   },
+
+  // Delete account
+  deleteAccount: () => apiClient.delete('/delete-account'),
 };
 
 // Service untuk Testimonial

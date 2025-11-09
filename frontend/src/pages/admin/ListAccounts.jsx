@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
+import { userService } from "../../services/apiService";
 
 export default function ListAccounts() {
   const [users, setUsers] = useState([]);
@@ -10,76 +11,40 @@ export default function ListAccounts() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [newPassword, setNewPassword] = useState("");
 
-  // Mock users data - in real app this would come from API
+  // Fetch users data from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockUsers = [
-        {
-          id: 1,
-          nama_lengkap: "Ahmad Santoso",
-          email: "ahmad@email.com",
-          no_telepon: "081234567890",
-          tanggal_daftar: "2025-01-15T10:30:00",
-          status_akun: "active",
-          role: "user",
-          last_login: "2025-01-20T14:30:00",
-          events_joined: 3,
-          total_spending: 150000
-        },
-        {
-          id: 2,
-          nama_lengkap: "Siti Nurhaliza",
-          email: "siti@email.com",
-          no_telepon: "081987654321",
-          tanggal_daftar: "2025-01-18T14:20:00",
-          status_akun: "active",
-          role: "user",
-          last_login: "2025-01-22T09:15:00",
-          events_joined: 1,
-          total_spending: 50000
-        },
-        {
-          id: 3,
-          nama_lengkap: "Budi Setiawan",
-          email: "budi@email.com",
-          no_telepon: "085123456789",
-          tanggal_daftar: "2025-01-20T09:15:00",
-          status_akun: "inactive",
-          role: "user",
-          last_login: "2025-01-19T16:45:00",
-          events_joined: 2,
-          total_spending: 100000
-        },
-        {
-          id: 4,
-          nama_lengkap: "Maya Sari",
-          email: "maya@email.com",
-          no_telepon: "089876543210",
-          tanggal_daftar: "2025-01-22T16:45:00",
-          status_akun: "active",
-          role: "user",
-          last_login: "2025-01-25T11:30:00",
-          events_joined: 1,
-          total_spending: 75000
-        },
-        {
-          id: 5,
-          nama_lengkap: "Rizki Ramadhan",
-          email: "rizki@email.com",
-          no_telepon: "082345678901",
-          tanggal_daftar: "2025-01-25T11:30:00",
-          status_akun: "pending",
-          role: "user",
-          last_login: null,
-          events_joined: 0,
-          total_spending: 0
-        }
-      ];
-      setUsers(mockUsers);
-      setLoading(false);
-    }, 1000);
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await userService.getAllUsers();
+      console.log('Users data from API:', response.data);
+      
+      // Transform API data to match UI format if needed
+      const transformedUsers = response.data.map(user => ({
+        id: user.id,
+        nama_lengkap: user.nama_lengkap || user.name || '-',
+        email: user.email,
+        no_telepon: user.no_telepon || user.phone || '-',
+        tanggal_daftar: user.created_at,
+        status_akun: user.status || 'active',
+        role: user.role || 'user',
+        last_login: user.last_login_at,
+        events_joined: user.events_count || 0,
+        total_spending: user.total_spending || 0
+      }));
+      
+      console.log('Transformed users:', transformedUsers);
+      setUsers(transformedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      alert('Gagal memuat data pengguna. ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter users
   const filteredUsers = users.filter(user => {
@@ -108,14 +73,24 @@ export default function ListAccounts() {
     return texts[status] || status;
   };
 
-  const handleStatusToggle = (userId, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    setUsers(prev => prev.map(u =>
-      u.id === userId ? { ...u, status_akun: newStatus } : u
-    ));
+  const handleStatusToggle = async (userId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      // Call API to update status
+      await userService.updateUserStatus(userId, newStatus);
+      
+      // Update local state
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, status_akun: newStatus } : u
+      ));
 
-    const user = users.find(u => u.id === userId);
-    alert(`Status akun ${user.nama_lengkap} berhasil diubah menjadi ${getStatusText(newStatus)}`);
+      const user = users.find(u => u.id === userId);
+      alert(`Status akun ${user.nama_lengkap} berhasil diubah menjadi ${getStatusText(newStatus)}`);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      alert('Gagal mengubah status akun. ' + (error.response?.data?.message || error.message));
+    }
   };
 
   const handleResetPassword = (user) => {
@@ -124,33 +99,130 @@ export default function ListAccounts() {
     setShowPasswordModal(true);
   };
 
-  const handlePasswordSubmit = () => {
+  const handlePasswordSubmit = async () => {
     if (!newPassword || newPassword.length < 6) {
       alert("Password minimal 6 karakter");
       return;
     }
 
-    // In real app, this would call API to reset password
-    alert(`Password untuk ${selectedUser.nama_lengkap} berhasil direset`);
-    setShowPasswordModal(false);
-    setSelectedUser(null);
-    setNewPassword("");
+    try {
+      // Call API to reset password
+      await userService.resetPassword(selectedUser.id, newPassword);
+      
+      alert(`Password untuk ${selectedUser.nama_lengkap} berhasil direset`);
+      setShowPasswordModal(false);
+      setSelectedUser(null);
+      setNewPassword("");
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      alert('Gagal mereset password. ' + (error.response?.data?.message || error.message));
+    }
   };
 
-  const exportUsers = () => {
-    const csvContent = "data:text/csv;charset=utf-8,"
-      + "ID,Nama Lengkap,Email,No. Telepon,Status Akun,Role,Tanggal Daftar,Last Login,Event yang Diikuti,Total Pengeluaran\n"
-      + filteredUsers.map(u =>
-        `${u.id},"${u.nama_lengkap}",${u.email},${u.no_telepon},${u.status_akun},${u.role},${new Date(u.tanggal_daftar).toLocaleDateString()},${u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Belum pernah login'},${u.events_joined},${u.total_spending}`
-      ).join("\n");
+  const exportUsers = async () => {
+    try {
+      const response = await userService.exportUsersToExcel();
+      
+      // Create blob from response
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Daftar_Akun_Pengguna_${new Date().toISOString().slice(0,10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      alert('Gagal export data. ' + (error.response?.data?.message || error.message));
+    }
+  };
 
-    const encodedUri = encodeURI(csvContent);
+  const exportUsersToCSV = () => {
+    const headers = [
+      'No',
+      'ID',
+      'Nama Lengkap',
+      'Email',
+      'No. Telepon',
+      'Role',
+      'Status Akun',
+      'Tanggal Daftar',
+      'Last Login',
+      'Event Diikuti',
+      'Total Pengeluaran (Rp)'
+    ];
+
+    const csvRows = [
+      headers.join(','),
+      ...filteredUsers.map((user, index) => {
+        const dateObj = new Date(user.tanggal_daftar);
+        const tanggalDaftar = dateObj.toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }) + ' ' + dateObj.toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const lastLogin = user.last_login 
+          ? (() => {
+              const loginDate = new Date(user.last_login);
+              return loginDate.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              }) + ' ' + loginDate.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            })()
+          : 'Belum pernah login';
+
+        const statusAkun = getStatusText(user.status_akun);
+        const roleText = user.role === 'admin' ? 'Admin' : 'User';
+        const totalSpending = parseFloat(user.total_spending) || 0;
+
+        return [
+          index + 1,
+          user.id,
+          `"${user.nama_lengkap || ''}"`,
+          `"${user.email || ''}"`,
+          `"${user.no_telepon || ''}"`,
+          roleText,
+          statusAkun,
+          tanggalDaftar,
+          lastLogin,
+          user.events_joined || 0,
+          totalSpending
+        ].join(',');
+      })
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "daftar_akun_pengguna.csv");
+    const url = URL.createObjectURL(blob);
+    
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const filename = `daftar_akun_pengguna_${dateStr}.csv`;
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -196,7 +268,7 @@ export default function ListAccounts() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={exportUsers}
+                onClick={exportUsersToCSV}
                 className="px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
