@@ -26,6 +26,7 @@ class User extends Authenticatable
         'alamat',
         'pendidikan_terakhir',
         'status_akun',
+        'role',
         'otp',
         'profile_image',
     ];

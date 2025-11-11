@@ -26,6 +26,10 @@ export default function AddEvent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showTicketForm, setShowTicketForm] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showLimitPopup, setShowLimitPopup] = useState(false);
+  const [daysDifference, setDaysDifference] = useState(0);
   const [ticketForm, setTicketForm] = useState({
     nama_tiket: "",
     harga: "",
@@ -79,6 +83,22 @@ export default function AddEvent() {
       // Validate form
       if (!formData.judul_kegiatan || !formData.penyelenggara || !formData.lokasi_kegiatan || !formData.waktu_mulai) {
         alert("Mohon lengkapi semua field yang wajib diisi (Judul, Penyelenggara, Lokasi, Waktu Mulai)");
+        return;
+      }
+
+      // Validasi H-3: Event harus dibuat minimal 3 hari sebelum tanggal pelaksanaan
+      const eventDate = new Date(formData.waktu_mulai);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset ke awal hari
+      eventDate.setHours(0, 0, 0, 0); // Reset ke awal hari
+      
+      const timeDiff = eventDate.getTime() - today.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      
+      if (daysDiff < 3) {
+        setDaysDifference(daysDiff);
+        setShowLimitPopup(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -138,10 +158,20 @@ export default function AddEvent() {
         tickets: []
       });
 
-      alert("Event berhasil ditambahkan!");
+      // Show success message
+      setErrorMessage("Event berhasil ditambahkan!");
+      setShowErrorPopup(true);
+      
+      // Auto close after 2 seconds and reload
+      setTimeout(() => {
+        setShowErrorPopup(false);
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       console.error("Error adding event:", error);
-      alert("Error: " + (error.response?.data?.message || error.message || "Gagal menambahkan event. Silakan coba lagi."));
+      const errorMsg = error.response?.data?.message || error.message || "Gagal menambahkan event. Silakan coba lagi.";
+      setErrorMessage(errorMsg);
+      setShowErrorPopup(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -213,6 +243,258 @@ export default function AddEvent() {
       minute: '2-digit'
     });
   };
+
+  // Limit H-3 Popup Component
+  const LimitPopup = () => (
+    showLimitPopup && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fadeIn">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden animate-slideUp">
+          {/* Header dengan animasi gradient */}
+          <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-8 overflow-hidden">
+            {/* Animasi latar belakang */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+              <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+              <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-white rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+            </div>
+            
+            <div className="relative flex items-start gap-4">
+              {/* Icon dengan animasi */}
+              <div className="flex-shrink-0">
+                <div className="w-16 h-16 bg-white/30 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg animate-bounce" style={{ animationDuration: '2s' }}>
+                  <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+                  Batas Waktu Terlewati!
+                </h3>
+                <p className="text-white/95 text-sm font-medium drop-shadow">
+                  Pembuatan event tidak dapat dilanjutkan
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-8 space-y-6">
+            {/* Pesan utama dengan highlight */}
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 rounded-full border-2 border-red-300">
+                <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-bold text-red-700">
+                  {daysDifference === 0 ? "Event hari ini" : 
+                   daysDifference === 1 ? "Event besok" : 
+                   daysDifference === 2 ? "Event lusa" :
+                   `Event dalam ${daysDifference} hari`}
+                </span>
+              </div>
+              
+              <p className="text-gray-700 text-base leading-relaxed">
+                Maaf, Anda tidak dapat membuat event ini karena tanggal pelaksanaan event 
+                <span className="font-bold text-[#0A1931]"> kurang dari 3 hari </span> 
+                dari hari ini.
+              </p>
+            </div>
+
+            {/* Info box dengan aturan H-3 */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border-2 border-blue-200 shadow-inner">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-blue-900 mb-2 text-base">Aturan Pembuatan Event</h4>
+                  <p className="text-sm text-blue-800 leading-relaxed mb-3">
+                    Untuk memastikan persiapan yang matang dan memberikan waktu yang cukup bagi peserta untuk mendaftar, admin <span className="font-bold">wajib membuat event minimal 3 hari sebelum</span> tanggal pelaksanaan.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 rounded-lg px-3 py-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-semibold">Minimal H-3 dari tanggal event</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Saran */}
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h5 className="font-bold text-amber-900 text-sm mb-1">Saran</h5>
+                  <p className="text-xs text-amber-800">
+                    Silakan pilih tanggal event yang lebih dari 3 hari ke depan atau hubungi super admin untuk pengecualian khusus.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={() => {
+                setShowLimitPopup(false);
+                setDaysDifference(0);
+              }}
+              className="w-full px-6 py-4 bg-gradient-to-r from-[#4A7FA7] via-[#2A5F87] to-[#1A3D63] text-white text-base font-bold rounded-xl hover:from-[#4A7FA7]/90 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Saya Mengerti
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  );
+
+  // Error Popup Modal Component
+  const ErrorPopup = () => (
+    showErrorPopup && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fadeIn">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden animate-slideUp">
+          {errorMessage.includes("berhasil") ? (
+            // Success Design
+            <>
+              {/* Header dengan animasi gradient */}
+              <div className="relative bg-gradient-to-br from-[#4A7FA7] via-[#2F6890] to-[#1A3D63] p-8 overflow-hidden">
+                {/* Animasi latar belakang */}
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                  <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-white rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+                </div>
+                
+                <div className="relative flex flex-col items-center text-center">
+                  {/* Icon dengan animasi */}
+                  <div className="mb-4">
+                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl animate-bounce" style={{ animationDuration: '1.5s' }}>
+                      <svg className="w-11 h-11 text-[#4A7FA7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
+                    Event Berhasil Ditambahkan!
+                  </h3>
+                  <p className="text-white/90 text-sm font-medium drop-shadow">
+                    Event Anda telah tersimpan dan siap ditampilkan
+                  </p>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-8 space-y-6">
+                {/* Success message dengan desain card */}
+                <div className="bg-gradient-to-br from-[#4A7FA7]/10 to-[#1A3D63]/5 rounded-2xl p-5 border-2 border-[#4A7FA7]/20">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-xl flex items-center justify-center shadow-md">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-[#0A1931] mb-2 text-base">Operasi Berhasil</h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {errorMessage}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info tambahan */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h5 className="font-bold text-blue-900 text-sm mb-1">Info</h5>
+                      <p className="text-xs text-blue-800">
+                        Event akan segera tersedia di halaman homepage dan peserta dapat mulai mendaftar.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <button
+                  onClick={() => setShowErrorPopup(false)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#4A7FA7] via-[#2A5F87] to-[#1A3D63] text-white text-base font-bold rounded-xl hover:from-[#4A7FA7]/90 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  OK, Mengerti
+                </button>
+              </div>
+            </>
+          ) : (
+            // Error Design
+            <>
+              {/* Header */}
+              <div className="relative bg-gradient-to-br from-red-500 to-red-600 p-6 overflow-hidden">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">
+                    Perhatian!
+                  </h3>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <p className="text-gray-700 leading-relaxed mb-6">
+                  {errorMessage}
+                </p>
+                
+                {/* Informasi H-3 Rule */}
+                {errorMessage.includes("H-3") && (
+                  <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-blue-900 mb-1">Aturan Pembuatan Event</h4>
+                        <p className="text-sm text-blue-800">
+                          Admin hanya dapat membuat event maksimal <span className="font-bold">3 hari sebelum</span> tanggal pelaksanaan event. Ini untuk memastikan persiapan yang matang dan memberikan waktu yang cukup bagi peserta untuk mendaftar.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Button */}
+                <button
+                  onClick={() => setShowErrorPopup(false)}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300"
+                >
+                  Mengerti
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  );
 
   const EventPreviewCard = () => (
     <div className="bg-white rounded-xl shadow-lg border border-[#4A7FA7]/20 overflow-hidden hover:shadow-xl transition-all duration-300">
@@ -344,6 +626,11 @@ export default function AddEvent() {
 
   return (
     <AdminLayout>
+      {/* Limit H-3 Popup */}
+      <LimitPopup />
+      
+      {/* Error Popup */}
+      <ErrorPopup />
       <div className="min-h-screen relative bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 overflow-hidden">
         {/* Animated Background */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">

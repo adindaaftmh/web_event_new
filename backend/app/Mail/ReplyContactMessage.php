@@ -30,7 +30,6 @@ class ReplyContactMessage extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            to: [$this->recipientEmail],
             subject: $this->subject,
         );
     }
@@ -40,5 +39,10 @@ class ReplyContactMessage extends Mailable
         return new Content(
             view: 'emails.reply-contact',
         );
+    }
+
+    public function attachments(): array
+    {
+        return [];
     }
 }

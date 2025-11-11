@@ -23,13 +23,23 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e9ecef;
+            padding: 30px;
+            background: linear-gradient(135deg, #4A7FA7 0%, #1A3D63 100%);
+            border-radius: 10px;
+            color: white;
         }
         .header h1 {
-            color: #2c3e50;
+            color: white;
             margin: 0;
-            font-size: 24px;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .header p {
+            color: white;
+            opacity: 0.9;
+            margin: 10px 0 0 0;
+            font-size: 14px;
         }
         .otp-container {
             text-align: center;
@@ -42,7 +52,7 @@
         .otp-code {
             font-size: 32px;
             font-weight: bold;
-            color: #007bff;
+            color: #4A7FA7;
             letter-spacing: 8px;
             font-family: 'Courier New', monospace;
             margin: 10px 0;
@@ -72,32 +82,45 @@
         .button {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #007bff;
+            background-color: #4A7FA7;
             color: white;
             text-decoration: none;
             border-radius: 5px;
             margin: 10px 0;
         }
         .button:hover {
-            background-color: #0056b3;
+            background-color: #1A3D63;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 Kode OTP Registrasi</h1>
-            <p>Sistem Manajemen Kegiatan</p>
+            <h1>DYNOTIX</h1>
+            <p>Platform Manajemen Acara Digital</p>
+            @if($type === 'forgot_password')
+                <h2 style="margin: 20px 0 0 0; font-size: 20px; font-weight: normal;">🔒 Reset Password</h2>
+            @else
+                <h2 style="margin: 20px 0 0 0; font-size: 20px; font-weight: normal;">🔐 Kode OTP Registrasi</h2>
+            @endif
         </div>
 
         <p>Halo!</p>
         
-        <p>Anda telah meminta kode OTP untuk registrasi akun di <strong>Sistem Manajemen Kegiatan</strong>.</p>
+        @if($type === 'forgot_password')
+            <p>Anda telah meminta untuk mereset password akun Anda di <strong>Dynotix - Platform Manajemen Acara Digital</strong>.</p>
+        @else
+            <p>Anda telah meminta kode OTP untuk registrasi akun di <strong>Dynotix - Platform Manajemen Acara Digital</strong>.</p>
+        @endif
 
         <div class="otp-container">
             <p><strong>Kode OTP Anda:</strong></p>
             <div class="otp-code">{{ $otpCode }}</div>
-            <p><small>Masukkan kode ini di halaman registrasi</small></p>
+            @if($type === 'forgot_password')
+                <p><small>Masukkan kode ini di halaman reset password</small></p>
+            @else
+                <p><small>Masukkan kode ini di halaman registrasi</small></p>
+            @endif
         </div>
 
         <div class="info">
@@ -109,16 +132,21 @@
             <strong>⚠️ Penting:</strong>
             <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>Jangan bagikan kode OTP ini kepada siapapun</li>
-                <li>Kode OTP berlaku selama 10 menit</li>
-                <li>Jika Anda tidak meminta kode ini, abaikan email ini</li>
+                <li>Kode OTP berlaku selama 5 menit</li>
+                @if($type === 'forgot_password')
+                    <li>Jika Anda tidak meminta reset password, segera ubah password akun Anda</li>
+                @else
+                    <li>Jika Anda tidak meminta kode ini, abaikan email ini</li>
+                @endif
             </ul>
         </div>
 
         <p>Jika Anda mengalami masalah atau tidak meminta kode ini, silakan hubungi tim support kami.</p>
 
         <div class="footer">
+            <p><strong>Dynotix</strong> - Platform Manajemen Acara Digital</p>
             <p>Email ini dikirim otomatis, mohon tidak membalas email ini.</p>
-            <p>&copy; {{ date('Y') }} Sistem Manajemen Kegiatan. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} Dynotix. All rights reserved.</p>
         </div>
     </div>
 </body>

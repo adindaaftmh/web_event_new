@@ -7,6 +7,7 @@ use App\Mail\ReplyContactMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class ContactMessageController extends Controller
 {
@@ -134,6 +135,12 @@ class ContactMessageController extends Controller
         try {
             $message = ContactMessage::findOrFail($id);
             
+            Log::info('Attempting to send email to: ' . $message->email);
+            Log::info('Mail configuration:', [
+                'mailer' => config('mail.default'),
+                'from' => config('mail.from')
+            ]);
+            
             // Send email
             Mail::to($message->email)->send(
                 new ReplyContactMessage(
@@ -149,6 +156,8 @@ class ContactMessageController extends Controller
                 )
             );
 
+            Log::info('Email sent successfully');
+
             // Mark as read after replying
             $message->update(['is_read' => true]);
 
@@ -157,10 +166,14 @@ class ContactMessageController extends Controller
                 'message' => 'Email berhasil dikirim'
             ]);
         } catch (\Exception $e) {
+            Log::error('Email sending failed: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengirim email',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     }

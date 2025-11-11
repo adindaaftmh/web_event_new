@@ -64,6 +64,11 @@ export default function ListParticipants() {
   // Get unique events from participants
   const uniqueEvents = [...new Set(participants.flatMap(p => p.event_joined))].sort();
 
+  // Helper function: Format rupiah dengan format lengkap (angka penuh)
+  const formatCompactRupiah = (value) => {
+    return `Rp ${value.toLocaleString('id-ID')}`;
+  };
+
   // Calculate revenue statistics from all registered participants
   const revenueStats = useMemo(() => {
     // Count all participants who have registered (all participants that have total_harga data)
@@ -354,14 +359,14 @@ export default function ListParticipants() {
           <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 group hover:scale-105">
             <div className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1 pr-4">
                   <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Total Pendapatan</p>
-                  <h3 className="text-3xl font-bold text-[#0A1931] mb-2">
-                    Rp {revenueStats.totalRevenue.toLocaleString('id-ID')}
+                  <h3 className="text-sm lg:text-base font-bold text-[#0A1931] mb-2 break-words">
+                    {formatCompactRupiah(revenueStats.totalRevenue)}
                   </h3>
-                  <p className="text-gray-600 text-sm font-semibold">Dari {revenueStats.totalRegistered} peserta yang sudah mendaftar</p>
+                  <p className="text-gray-600 text-xs font-semibold">Dari {revenueStats.totalRegistered} peserta terdaftar</p>
                 </div>
-                <div className="w-16 h-16 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -373,14 +378,14 @@ export default function ListParticipants() {
           <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 group hover:scale-105">
             <div className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1 pr-4">
                   <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Pendapatan Admin</p>
-                  <h3 className="text-3xl font-bold text-[#0A1931] mb-2">
-                    Rp {revenueStats.adminIncome.toLocaleString('id-ID')}
+                  <h3 className="text-sm lg:text-base font-bold text-[#0A1931] mb-2 break-words">
+                    {formatCompactRupiah(revenueStats.adminIncome)}
                   </h3>
-                  <p className="text-green-600 text-sm font-semibold">Komisi 10%</p>
+                  <p className="text-green-600 text-xs font-semibold">Komisi 10%</p>
                 </div>
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -392,12 +397,12 @@ export default function ListParticipants() {
           <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl border-2 border-[#4A7FA7]/20 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 group hover:scale-105">
             <div className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1 pr-4">
                   <p className="text-[#4A7FA7] text-sm font-semibold mb-1">Pendapatan Panitia</p>
-                  <h3 className="text-3xl font-bold text-[#0A1931] mb-2">
-                    Rp {revenueStats.organizerIncome.toLocaleString('id-ID')}
+                  <h3 className="text-sm lg:text-base font-bold text-[#0A1931] mb-2 break-words">
+                    {formatCompactRupiah(revenueStats.organizerIncome)}
                   </h3>
-                  <p className="text-blue-600 text-sm font-semibold">Total 90%</p>
+                  <p className="text-blue-600 text-xs font-semibold">Total 90%</p>
                 </div>
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

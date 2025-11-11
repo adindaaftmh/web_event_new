@@ -16,15 +16,17 @@ class OtpMail extends Mailable
     public $otpCode;
     public $email;
     public $expiresAt;
+    public $type;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($otpCode, $email, $expiresAt)
+    public function __construct($otpCode, $email, $expiresAt, $type = 'register')
     {
         $this->otpCode = $otpCode;
         $this->email = $email;
         $this->expiresAt = $expiresAt;
+        $this->type = $type; // 'register' or 'forgot_password'
     }
 
     /**
@@ -32,8 +34,12 @@ class OtpMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = $this->type === 'forgot_password' 
+            ? 'Kode OTP Reset Password - Dynotix'
+            : 'Kode OTP untuk Registrasi - Dynotix';
+            
         return new Envelope(
-            subject: 'Kode OTP untuk Registrasi - Sistem Manajemen Kegiatan',
+            subject: $subject,
         );
     }
 
@@ -48,6 +54,7 @@ class OtpMail extends Mailable
                 'otpCode' => $this->otpCode,
                 'email' => $this->email,
                 'expiresAt' => $this->expiresAt,
+                'type' => $this->type,
             ],
         );
     }

@@ -141,7 +141,7 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => 'Email tidak ditemukan atau tidak valid',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -150,23 +150,39 @@ class AuthController extends Controller
             // Generate OTP
             $otp = OtpCode::createForEmail($request->email);
             
-            // Send OTP via email
-            Mail::to($request->email)->send(new OtpMail(
-                $otp->otp_code,
-                $request->email,
-                $otp->expires_at
-            ));
+            // Log OTP untuk testing (akan muncul di storage/logs/laravel.log)
+            \Log::info('===== FORGOT PASSWORD OTP =====');
+            \Log::info('Email: ' . $request->email);
+            \Log::info('OTP Code: ' . $otp->otp_code);
+            \Log::info('Expires at: ' . $otp->expires_at->format('Y-m-d H:i:s'));
+            \Log::info('==============================');
+            
+            // Try to send email, but don't fail if email not configured
+            try {
+                Mail::to($request->email)->send(new OtpMail(
+                    $otp->otp_code,
+                    $request->email,
+                    $otp->expires_at,
+                    'forgot_password' // Type untuk reset password
+                ));
+                \Log::info('✅ Email OTP berhasil dikirim ke: ' . $request->email);
+            } catch (\Exception $mailError) {
+                \Log::error('❌ Email sending failed: ' . $mailError->getMessage());
+                \Log::warning('OTP logged instead - check laravel.log');
+            }
             
             return response()->json([
                 'success' => true,
                 'message' => 'Kode OTP untuk reset password telah dikirim ke email Anda',
                 'data' => [
                     'email' => $request->email,
-                    'expires_at' => $otp->expires_at->format('Y-m-d H:i:s')
+                    'expires_at' => $otp->expires_at->format('Y-m-d H:i:s'),
+                    'otp_code' => env('APP_DEBUG') ? $otp->otp_code : null // Show OTP in debug mode
                 ]
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Forgot password error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengirim OTP: ' . $e->getMessage(),

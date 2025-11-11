@@ -6,7 +6,7 @@ import QRCode from 'react-qr-code';
 import jsPDF from 'jspdf';
 import { userService, daftarHadirService } from "../services/apiService";
 import oceanBg from "../assets/ocean.jpg";
-import { downloadTemplateCertificate } from "../components/CertificateTemplate";
+import { downloadCertificate } from "../components/CertificateGenerator";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -589,8 +589,8 @@ export default function Profile() {
 
       console.log('Certificate data:', certificateData); // Debug
 
-      // Use the template certificate generator
-      const result = await downloadTemplateCertificate(certificateData);
+      // Use the certificate generator
+      const result = await downloadCertificate(certificateData);
 
       if (result.success) {
         alert(`✅ Sertifikat Berhasil Diunduh!\n\n📄 Nomor Sertifikat: ${certNumber}\n🎨 Desain: Template Dynotix\n📁 File: ${result.fileName}\n\nTerima kasih telah menggunakan platform Dynotix!`);

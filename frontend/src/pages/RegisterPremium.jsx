@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+  import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../config/api";
 import oceanBg from "../assets/ocean.jpg"; 
@@ -10,6 +10,8 @@ export default function Register() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ title: '', message: '' });
   
   const [formData, setFormData] = useState({
     nama_lengkap: "",
@@ -49,9 +51,60 @@ export default function Register() {
     setError("");
   };
 
+  const validateForm = () => {
+    // Validasi password
+    if (formData.password.length < 8) {
+      setErrorModal({
+        title: '❌ Password Terlalu Pendek',
+        message: 'Password harus minimal 8 karakter'
+      });
+      setShowErrorModal(true);
+      return false;
+    }
+
+    // Validasi password confirmation
+    if (formData.password !== formData.password_confirmation) {
+      setErrorModal({
+        title: '❌ Password Tidak Cocok',
+        message: 'Password dan Konfirmasi Password tidak sama. Silakan periksa kembali.'
+      });
+      setShowErrorModal(true);
+      return false;
+    }
+
+    // Validasi no handphone
+    if (!/^08[0-9]{8,11}$/.test(formData.no_handphone)) {
+      setErrorModal({
+        title: '❌ Nomor HP Tidak Valid',
+        message: 'Nomor HP harus dimulai dengan 08 dan terdiri dari 10-13 digit'
+      });
+      setShowErrorModal(true);
+      return false;
+    }
+
+    // Validasi email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setErrorModal({
+        title: '❌ Format Email Salah',
+        message: 'Masukkan alamat email yang valid'
+      });
+      setShowErrorModal(true);
+      return false;
+    }
+
+    return true;
+  };
+
   const handleGenerateOtp = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Validasi form sebelum kirim OTP
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -68,7 +121,13 @@ export default function Register() {
         setRemainingTime(300);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Gagal mengirim OTP");
+      const errorMessage = err.response?.data?.message || "Gagal mengirim OTP";
+      setErrorModal({
+        title: '❌ Gagal Mengirim OTP',
+        message: errorMessage
+      });
+      setShowErrorModal(true);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -123,13 +182,28 @@ export default function Register() {
       console.error('Verification error:', err.response?.data);
       
       // Handle validation errors
+      let errorMessage = '';
+      let errorTitle = '❌ Verifikasi Gagal';
+      
       if (err.response?.data?.errors) {
         const errors = err.response.data.errors;
-        const errorMessages = Object.values(errors).flat().join(', ');
-        setError(errorMessages);
+        errorMessage = Object.values(errors).flat().join(', ');
+        
+        // Specific error for password mismatch
+        if (errors.password_confirmation) {
+          errorTitle = '❌ Password Tidak Cocok';
+          errorMessage = 'Password dan Konfirmasi Password tidak sama';
+        }
       } else {
-        setError(err.response?.data?.message || err.response?.data?.error || "Verifikasi OTP gagal");
+        errorMessage = err.response?.data?.message || err.response?.data?.error || "Verifikasi OTP gagal";
       }
+      
+      setErrorModal({
+        title: errorTitle,
+        message: errorMessage
+      });
+      setShowErrorModal(true);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -143,6 +217,28 @@ export default function Register() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Error Modal Popup */}
+      {showErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-in zoom-in duration-200">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <svg className="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{errorModal.title}</h3>
+              <p className="text-gray-600 mb-6">{errorModal.message}</p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="w-full px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
         {/* Background Image*/}
       <div

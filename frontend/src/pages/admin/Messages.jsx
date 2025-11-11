@@ -18,6 +18,7 @@ export default function Messages() {
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [replyMessage, setReplyMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     fetchMessages();
@@ -133,21 +134,36 @@ export default function Messages() {
       );
 
       if (response.data?.success) {
-        alert('✓ Email berhasil dikirim!');
         setShowComposeModal(false);
         setReplyMessage('');
+        setShowSuccessPopup(true);
         
         // Mark as read in local state
         const updatedMessages = messages.map(msg => 
           msg.id === selectedMessage.id ? { ...msg, is_read: true } : msg
         );
         setMessages(updatedMessages);
+        
+        // Auto hide popup after 3 seconds
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+        }, 3000);
       } else {
         throw new Error(response.data?.message || 'Gagal mengirim email');
       }
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('❌ Gagal mengirim email: ' + (error.response?.data?.message || error.message));
+      console.error('Error response:', error.response?.data);
+      
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      const debugInfo = error.response?.data?.debug;
+      
+      let alertMessage = '❌ Gagal mengirim email: ' + errorMsg;
+      if (debugInfo) {
+        alertMessage += '\n\nDebug Info:\nFile: ' + debugInfo.file + '\nLine: ' + debugInfo.line + '\nClass: ' + debugInfo.class;
+      }
+      
+      alert(alertMessage);
     } finally {
       setSending(false);
     }
@@ -356,6 +372,21 @@ export default function Messages() {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Detail Message Modal */}
+      {showModal && selectedMessage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-bold text-[#0A1931] flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-[#4A7FA7]" />
+                Detail Pesan
+              </h2>
+              <button
                 onClick={() => setShowModal(false)}
                 className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-[#0A1931] hover:bg-gray-200 transition-colors"
               >
@@ -363,7 +394,7 @@ export default function Messages() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
                 <div className="w-12 h-12 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-full flex items-center justify-center text-white font-bold text-xl">
                   {selectedMessage.name.charAt(0).toUpperCase()}
@@ -437,6 +468,139 @@ export default function Messages() {
         </div>
       )}
 
+      {/* Compose Email Modal */}
+      {showComposeModal && selectedMessage && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[70]" onClick={() => setShowComposeModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] p-6 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Reply className="w-6 h-6" />
+                Balas Pesan
+              </h2>
+              <button
+                onClick={() => setShowComposeModal(false)}
+                className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Recipient Info */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border-2 border-blue-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {selectedMessage.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Kepada:</p>
+                    <p className="font-bold text-[#0A1931] text-lg">{selectedMessage.name}</p>
+                    <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                      <Mail className="w-3.5 h-3.5" />
+                      {selectedMessage.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-white/80 p-3 rounded-lg border border-blue-200">
+                  <p className="text-xs text-gray-500 mb-1">Pesan Asli:</p>
+                  <p className="text-sm text-gray-700 font-medium"><strong>Subjek:</strong> {selectedMessage.subject}</p>
+                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">{selectedMessage.message}</p>
+                </div>
+              </div>
+
+              {/* Reply Message */}
+              <div>
+                <label className="block text-sm font-bold text-[#0A1931] mb-2 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#4A7FA7]" />
+                  Pesan Balasan
+                </label>
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  rows={12}
+                  className="w-full px-4 py-3 border-2 border-[#4A7FA7]/30 rounded-xl focus:border-[#4A7FA7] focus:outline-none transition-all resize-none font-mono text-sm leading-relaxed"
+                  placeholder="Tulis balasan email Anda di sini..."
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Tips: Gunakan bahasa yang sopan dan jelas dalam menjawab pesan.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={handleSendEmail}
+                  disabled={sending || !replyMessage.trim()}
+                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {sending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Mengirim...
+                    </>
+                  ) : (
+                    <>
+                      <Reply className="w-5 h-5" />
+                      Kirim Email
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowComposeModal(false)}
+                  disabled={sending}
+                  className="px-6 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 flex items-center justify-center z-[80] bg-black/20">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-bounce-in">
+            <div className="text-center">
+              {/* Success Icon */}
+              <div className="mx-auto flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full mb-4 animate-scale-in">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              {/* Success Message */}
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Email Berhasil Dikirim!
+              </h3>
+              <p className="text-gray-600 mb-2">
+                Balasan Anda telah berhasil dikirim ke
+              </p>
+              <p className="font-semibold text-[#4A7FA7] mb-4">
+                {selectedMessage?.email}
+              </p>
+              
+              {/* Success Details */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-center gap-2 text-green-700">
+                  <Mail className="w-5 h-5" />
+                  <span className="text-sm font-medium">Pesan telah sampai ke inbox penerima</span>
+                </div>
+              </div>
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Animation Styles */}
       <style>{`
         @keyframes float {
@@ -449,6 +613,41 @@ export default function Messages() {
         }
         .animate-float {
           animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes bounce-in {
+          0% {
+            transform: scale(0.3) translateY(-50px);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.95);
+          }
+          100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-bounce-in {
+          animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes scale-in {
+          0% {
+            transform: scale(0) rotate(0deg);
+          }
+          50% {
+            transform: scale(1.2) rotate(180deg);
+          }
+          100% {
+            transform: scale(1) rotate(360deg);
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.6s ease-out 0.2s both;
         }
       `}</style>
     </AdminLayout>

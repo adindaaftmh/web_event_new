@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import TicketModal from '../components/TicketModal';
 import JigsawCaptcha from '../components/JigsawCaptcha';
+import PaymentButton from '../components/PaymentButton';
 import { kegiatanService, daftarHadirService } from '../services/apiService';
 
 export default function EventRegistration() {
@@ -47,6 +48,10 @@ export default function EventRegistration() {
   
   // Jigsaw Captcha state
   const [showCaptchaModal, setShowCaptchaModal] = useState(false);
+  
+  // Payment state
+  const [showPaymentSection, setShowPaymentSection] = useState(false);
+  const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
 
   // Load logged in user from localStorage
   useEffect(() => {
@@ -193,11 +198,39 @@ export default function EventRegistration() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Payment Handlers
+  const handlePaymentSuccess = async (paymentResult, orderId) => {
+    console.log('Payment Success:', paymentResult, orderId);
+    // Store payment info in pending data
+    setPendingRegistrationData(prev => ({
+      ...prev,
+      payment_order_id: orderId,
+      payment_status: 'success',
+      payment_result: paymentResult
+    }));
+    
+    // Hide payment section and show captcha
+    setShowPaymentSection(false);
+    setShowCaptchaModal(true);
+  };
+  
+  const handlePaymentPending = async (paymentResult, orderId) => {
+    console.log('Payment Pending:', paymentResult, orderId);
+    alert('Pembayaran sedang diproses. Anda akan menerima konfirmasi setelah pembayaran berhasil. Order ID: ' + orderId);
+  };
+  
+  const handlePaymentError = (paymentResult) => {
+    console.log('Payment Error:', paymentResult);
+    alert('Pembayaran gagal. Silakan coba lagi atau gunakan metode pembayaran lain.');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('=== HANDLE SUBMIT TRIGGERED ===');
     
     // Validate form first
     const tipePeserta = event?.tipe_peserta || 'individu';
+    console.log('Tipe Peserta:', tipePeserta);
     
     if (tipePeserta === 'tim') {
       if (!teamData.namaTeam.trim() || !teamData.ketuaTeam.namaLengkap.trim()) {
@@ -205,20 +238,129 @@ export default function EventRegistration() {
         return;
       }
     } else {
-      if (!validateForm()) {
+      const isValid = validateForm();
+      console.log('Form validation result:', isValid);
+      if (!isValid) {
+        console.log('Form validation failed, stopping...');
         return;
       }
     }
     
-    // Show captcha modal after validation
-    setShowCaptchaModal(true);
+    // Check if event is paid
+    const totalAmount = selectedTicket ? (selectedTicket.harga || selectedTicket.price) * quantity : 0;
+    console.log('Selected Ticket:', selectedTicket);
+    console.log('Total Amount:', totalAmount);
+    console.log('Quantity:', quantity);
+    
+    if (totalAmount > 0) {
+      console.log('=== EVENT BERBAYAR - SHOWING PAYMENT SECTION ===');
+      // For PAID events: Show payment section first (before captcha)
+      const registrationData = tipePeserta === 'tim' ? {
+        type: 'tim',
+        data: {
+          kegiatan_id: event?.id || id,
+          user_id: loggedInUser?.id || null,
+          nama_lengkap: teamData.ketuaTeam.namaLengkap,
+          email: teamData.ketuaTeam.email,
+          no_telepon: teamData.ketuaTeam.nomorTelepon,
+          tipe_peserta: 'tim',
+          nama_tim: teamData.namaTeam,
+          data_tim: JSON.stringify({
+            ketua: teamData.ketuaTeam,
+            anggota: teamData.anggotaTeam
+          }),
+          tiket_dipilih: selectedTicket ? selectedTicket.nama_tiket || selectedTicket.name : null,
+          jumlah_tiket: quantity,
+          total_harga: totalAmount,
+          status_kehadiran: 'tidak_hadir',
+          status_verifikasi: 'pending_payment'
+        }
+      } : {
+        type: 'individu',
+        data: {
+          kegiatan_id: event?.id || id,
+          user_id: loggedInUser?.id || null,
+          nama_lengkap: formData.namaLengkap,
+          email: formData.email,
+          no_telepon: formData.nomorTelepon,
+          alamat: formData.alamat,
+          pendidikan_terakhir: formData.pendidikanTerakhir,
+          tipe_peserta: 'individu',
+          tiket_dipilih: selectedTicket ? selectedTicket.nama_tiket || selectedTicket.name : null,
+          jumlah_tiket: quantity,
+          total_harga: totalAmount,
+          status_kehadiran: 'tidak_hadir',
+          status_verifikasi: 'pending_payment'
+        }
+      };
+      
+      console.log('Registration Data:', registrationData);
+      setPendingRegistrationData(registrationData);
+      console.log('Setting showPaymentSection to TRUE');
+      setShowPaymentSection(true);
+    } else {
+      console.log('=== EVENT GRATIS - SHOWING CAPTCHA ===');
+      // For FREE events: Show captcha modal directly
+      setShowCaptchaModal(true);
+    }
   };
 
   const handleCaptchaSuccess = async () => {
     setShowCaptchaModal(false);
     
     const tipePeserta = event?.tipe_peserta || 'individu';
+    const totalAmount = selectedTicket ? (selectedTicket.harga || selectedTicket.price) * quantity : 0;
     
+    // Check if this is after payment (paid event) or direct registration (free event)
+    if (pendingRegistrationData?.payment_order_id) {
+      // This is PAID event after payment success - save to database
+      try {
+        setLoading(true);
+        
+        const registrationData = {
+          ...pendingRegistrationData.data,
+          status_verifikasi: 'verified', // Payment success = auto verified
+          payment_order_id: pendingRegistrationData.payment_order_id,
+          payment_status: 'success'
+        };
+        
+        console.log('Saving registration after payment and captcha:', registrationData);
+        const response = await daftarHadirService.create(registrationData);
+        
+        if (response.data?.success) {
+          const registrationResult = response.data.data;
+          
+          // Prepare ticket data
+          setTicketData({
+            registrationId: registrationResult.id,
+            token: registrationResult.otp,
+            eventId: event?.id || id,
+            eventName: event?.judul_kegiatan || event?.name,
+            category: event?.kategori?.nama_kategori || '',
+            participantName: pendingRegistrationData.type === 'tim' ? teamData.ketuaTeam.namaLengkap : formData.namaLengkap,
+            email: pendingRegistrationData.type === 'tim' ? teamData.ketuaTeam.email : formData.email,
+            phone: pendingRegistrationData.type === 'tim' ? teamData.ketuaTeam.nomorTelepon : formData.nomorTelepon,
+            ticketType: selectedTicket ? selectedTicket.nama_tiket || selectedTicket.name : 'General',
+            eventDate: event?.waktu_mulai,
+            location: event?.lokasi_kegiatan,
+            teamName: pendingRegistrationData.type === 'tim' ? teamData.namaTeam : null
+          });
+          
+          setPendingRegistrationData(null);
+          setShowTicketModal(true);
+        } else {
+          alert(response.data?.message || 'Gagal menyimpan data pendaftaran.');
+        }
+      } catch (error) {
+        console.error('Error saving registration:', error);
+        alert('Pembayaran berhasil, tapi gagal menyimpan data pendaftaran. Silakan hubungi admin.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    // For FREE events, proceed directly to save
     if (tipePeserta === 'tim') {
       // Validate team data
       if (!teamData.namaTeam.trim() || !teamData.ketuaTeam.namaLengkap.trim()) {
@@ -1009,16 +1151,100 @@ export default function EventRegistration() {
                 </div>
               )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full px-6 py-4 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-[#4A7FA7]/50 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden group"
-              >
-                <span className="relative z-10">
-                  Daftar Sekarang
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-[#1A3D63] to-[#4A7FA7] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </button>
+              {/* Payment Section or Submit Button */}
+              {(() => {
+                console.log('RENDER: showPaymentSection =', showPaymentSection);
+                console.log('RENDER: selectedTicket =', selectedTicket);
+                return null;
+              })()}
+              
+              {showPaymentSection && selectedTicket && (selectedTicket.price > 0 || selectedTicket.harga > 0) ? (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg p-6 border-2 border-green-300 animate-scale-in">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#0A1931] mb-2">Data Pendaftaran Valid!</h3>
+                    <p className="text-gray-600">Lanjutkan ke pembayaran untuk menyelesaikan pendaftaran</p>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-5 mb-6 shadow-md">
+                    <h4 className="font-bold text-[#0A1931] mb-4">Ringkasan Pembayaran</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Event:</span>
+                        <span className="font-semibold text-[#0A1931]">{event?.judul_kegiatan}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Peserta:</span>
+                        <span className="font-semibold text-[#0A1931]">
+                          {pendingRegistrationData?.type === 'tim' ? teamData.ketuaTeam.namaLengkap : formData.namaLengkap}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-semibold text-[#0A1931]">
+                          {pendingRegistrationData?.type === 'tim' ? teamData.ketuaTeam.email : formData.email}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">No. Telepon:</span>
+                        <span className="font-semibold text-[#0A1931]">
+                          {pendingRegistrationData?.type === 'tim' ? teamData.ketuaTeam.nomorTelepon : formData.nomorTelepon}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Tiket:</span>
+                        <span className="font-semibold text-[#0A1931]">{selectedTicket.name || selectedTicket.nama_tiket} x {quantity}</span>
+                      </div>
+                      <div className="flex justify-between pt-3 border-t-2 border-gray-200">
+                        <span className="font-bold text-gray-700">Total:</span>
+                        <span className="text-2xl font-bold text-[#4A7FA7]">
+                          Rp {((selectedTicket.price || selectedTicket.harga) * quantity).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center mb-4">
+                    <PaymentButton
+                      amount={(selectedTicket.price || selectedTicket.harga) * quantity}
+                      name={pendingRegistrationData?.type === 'tim' ? teamData.ketuaTeam.namaLengkap : formData.namaLengkap}
+                      email={pendingRegistrationData?.type === 'tim' ? teamData.ketuaTeam.email : formData.email}
+                      phone={pendingRegistrationData?.type === 'tim' ? teamData.ketuaTeam.nomorTelepon : formData.nomorTelepon}
+                      onSuccess={handlePaymentSuccess}
+                      onPending={handlePaymentPending}
+                      onError={handlePaymentError}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log('Kembali Edit Data clicked');
+                      setShowPaymentSection(false);
+                      setPendingRegistrationData(null);
+                    }}
+                    className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
+                  >
+                    Kembali Edit Data
+                  </button>
+                </div>
+              ) : (
+                /* Submit Button */
+                <button
+                  type="submit"
+                  disabled={showPaymentSection}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-[#4A7FA7]/50 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="relative z-10">
+                    Daftar Sekarang
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#1A3D63] to-[#4A7FA7] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </button>
+              )}
             </form>
           </div>
         </div>

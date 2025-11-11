@@ -216,7 +216,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-gray-800 mb-1">Telepon</h3>
-                    <p className="text-sm text-gray-600">+62 21 1234 5678</p>
+                    <p className="text-sm text-gray-600">+62 831-6922-1045</p>
                   </div>
                 </div>
 
@@ -228,7 +228,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-gray-800 mb-1">Email</h3>
-                    <p className="text-sm text-gray-600">info@dynotix.com</p>
+                    <p className="text-sm text-gray-600">dynotix@gmail.com</p>
                   </div>
                 </div>
 
@@ -241,7 +241,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-gray-800 mb-1">Alamat</h3>
-                    <p className="text-sm text-gray-600">Jakarta, Indonesia</p>
+                    <p className="text-sm text-gray-600">Tajur Bogor </p>
                   </div>
                 </div>
 
@@ -273,7 +273,7 @@ export default function Contact() {
                   </div>
                   <div className="bg-gray-200 rounded-xl overflow-hidden shadow-lg" style={{ height: '300px' }}>
                     <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126920.20099242145!2d106.68942995!3d-6.229386599999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e945e34b9d%3A0x5371bf0fdad786a2!2sJakarta%2C%20Indonesia!5e0!3m2!1sen!2s!4v1234567890"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63325.89087556891!2d106.78849697910156!3d-6.59659968359375!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c5d2e602b501%3A0x25a12f0f97fba863!2sJl.%20Raya%20Tajur%2C%20Muarasari%2C%20Kec.%20Bogor%20Sel.%2C%20Kota%20Bogor%2C%20Jawa%20Barat!5e0!3m2!1sen!2sid!4v1699548000000"
                       width="100%"
                       height="100%"
                       style={{ border: 0 }}
@@ -501,19 +501,19 @@ export default function Contact() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Jl. Contoh Alamat No. 123, Kota, Indonesia</span>
+                  <span>Jl. Raya Tajur, Kp. Buntar RT.02/RW.08, Kel. Muara sari, Kec. Bogor Selatan, Kota Bogor, Jawa Barat 16137</span>
                 </li>
                 <li className="flex items-start gap-2 text-[#B3CFE5]/80 text-xs">
                   <svg className="w-4 h-4 text-[#4A7FA7] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span>info@dynotix.com</span>
+                  <span>dynotix@gmail.com</span>
                 </li>
                 <li className="flex items-start gap-2 text-[#B3CFE5]/80 text-xs">
                   <svg className="w-4 h-4 text-[#4A7FA7] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
-                  <span>+62 812-3456-7890</span>
+                  <span>+62 831-6922-1045</span>
                 </li>
               </ul>
             </div>

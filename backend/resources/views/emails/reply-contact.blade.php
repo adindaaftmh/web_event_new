@@ -19,6 +19,14 @@
             border-radius: 10px 10px 0 0;
             text-align: center;
         }
+        .logo-container {
+            margin-bottom: 15px;
+        }
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+            filter: brightness(0) invert(1);
+        }
         .content {
             background: #f9f9f9;
             padding: 30px;
@@ -57,8 +65,10 @@
 </head>
 <body>
     <div class="header">
-        <h1 style="margin: 0;">{{ config('app.name') }}</h1>
-        <p style="margin: 5px 0 0 0; opacity: 0.9;">Event Management System</p>
+        <div class="logo-container">
+            <h1 style="margin: 0; font-size: 42px; font-weight: bold; letter-spacing: 2px;">DYNOTIX</h1>
+        </div>
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Platform Manajemen Acara Digital</p>
     </div>
     
     <div class="content">
@@ -79,7 +89,8 @@
     </div>
     
     <div class="footer">
-        <p>Email ini dikirim otomatis dari sistem {{ config('app.name') }}</p>
+        <p><strong>Dynotix</strong> - Platform Manajemen Acara Digital</p>
+        <p>Email ini dikirim otomatis dari sistem Dynotix</p>
         <p>Jika Anda memiliki pertanyaan, silakan hubungi kami.</p>
     </div>
 </body>

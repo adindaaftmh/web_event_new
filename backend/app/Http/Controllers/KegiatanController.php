@@ -11,6 +11,24 @@ use Illuminate\Support\Facades\Storage;
 class KegiatanController extends Controller
 {
     /**
+     * Generate unique slug
+     */
+    private function generateUniqueSlug($title)
+    {
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $count = 1;
+
+        // Check if slug exists and append number if needed
+        while (Kegiatan::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+
+        return $slug;
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -77,10 +95,13 @@ class KegiatanController extends Controller
         // Find kategori_id by nama_kategori
         $kategori = KategoriKegiatan::where('nama_kategori', $request->kategori)->first();
 
+        // Generate unique slug
+        $slug = $this->generateUniqueSlug($request->judul_kegiatan);
+
         $kegiatan = Kegiatan::create([
             'kategori_id' => $kategori ? $kategori->id : null,
             'judul_kegiatan' => $request->judul_kegiatan,
-            'slug' => Str::slug($request->judul_kegiatan),
+            'slug' => $slug,
             'deskripsi_kegiatan' => $request->deskripsi_kegiatan,
             'lokasi_kegiatan' => $request->lokasi_kegiatan,
             'flyer_kegiatan' => $flyerPath,

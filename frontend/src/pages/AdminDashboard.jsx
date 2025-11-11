@@ -39,17 +39,138 @@ export default function AdminDashboard() {
     }
   };
 
+  // Helper function: Format rupiah dengan format lengkap (angka penuh)
+  const formatCompactRupiah = (value) => {
+    return `Rp ${value.toLocaleString('id-ID')}`;
+  };
+
+  const exportDashboardData = () => {
+    const csvRows = [];
+    
+    // ===== SECTION 1: RINGKASAN STATISTIK =====
+    csvRows.push('===== RINGKASAN STATISTIK DASHBOARD =====');
+    csvRows.push('Tanggal Export,' + new Date().toLocaleString('id-ID'));
+    csvRows.push('');
+    
+    csvRows.push('Metrik,Nilai');
+    csvRows.push('Total Events,' + dashboardData.totalEvents);
+    csvRows.push('Total Participants,' + dashboardData.totalParticipants);
+    csvRows.push('Active Events,' + dashboardData.activeEvents);
+    csvRows.push('Total Revenue,Rp ' + dashboardData.totalRevenue.toLocaleString('id-ID'));
+    csvRows.push('Pendapatan Admin (10%),Rp ' + dashboardData.adminIncome.toLocaleString('id-ID'));
+    csvRows.push('Pendapatan Panitia (90%),Rp ' + dashboardData.organizerIncome.toLocaleString('id-ID'));
+    csvRows.push('');
+    csvRows.push('');
+    
+    // ===== SECTION 2: STATISTIK BULANAN =====
+    csvRows.push('===== STATISTIK PER BULAN (2025) =====');
+    csvRows.push('Bulan,Jumlah Event,Jumlah Peserta,Total Pendapatan,Pendapatan Admin (10%),Pendapatan Panitia (90%)');
+    
+    dashboardData.monthlyStats.forEach((stat) => {
+      // Calculate revenue for this month
+      const monthParticipants = participants.filter(participant => {
+        if (!participant.created_at) return false;
+        const registrationDate = new Date(participant.created_at);
+        const monthIndex = dashboardData.monthlyStats.findIndex(s => s.month === stat.month);
+        return registrationDate.getMonth() === monthIndex && registrationDate.getFullYear() === 2025;
+      });
+      
+      const monthRevenue = monthParticipants.reduce((sum, p) => {
+        const harga = parseFloat(p.total_harga) || 0;
+        return sum + harga;
+      }, 0);
+      
+      const monthAdminIncome = monthRevenue * 0.1;
+      const monthOrganizerIncome = monthRevenue * 0.9;
+
+      csvRows.push([
+        stat.month,
+        stat.events,
+        stat.participants,
+        'Rp ' + monthRevenue.toLocaleString('id-ID'),
+        'Rp ' + monthAdminIncome.toLocaleString('id-ID'),
+        'Rp ' + monthOrganizerIncome.toLocaleString('id-ID')
+      ].join(','));
+    });
+    
+    csvRows.push('');
+    csvRows.push('TOTAL,' + dashboardData.totalEvents + ',' + dashboardData.totalParticipants + 
+                ',Rp ' + dashboardData.totalRevenue.toLocaleString('id-ID') + 
+                ',Rp ' + dashboardData.adminIncome.toLocaleString('id-ID') + 
+                ',Rp ' + dashboardData.organizerIncome.toLocaleString('id-ID'));
+    csvRows.push('');
+    csvRows.push('');
+    
+    // ===== SECTION 3: TOP 10 EVENTS =====
+    csvRows.push('===== TOP 10 EVENT DENGAN PESERTA TERBANYAK =====');
+    csvRows.push('Ranking,Nama Event,Jumlah Peserta');
+    
+    dashboardData.topEvents.forEach((event, index) => {
+      let rankDisplay = (index + 1).toString();
+      if (index === 0) rankDisplay = '1 (Gold)';
+      else if (index === 1) rankDisplay = '2 (Silver)';
+      else if (index === 2) rankDisplay = '3 (Bronze)';
+      
+      csvRows.push([
+        rankDisplay,
+        '"' + event.name.replace(/"/g, '""') + '"', // Escape quotes in event name
+        event.participants
+      ].join(','));
+    });
+    
+    csvRows.push('');
+    csvRows.push('');
+    
+    // ===== SECTION 4: RECENT ACTIVITY =====
+    csvRows.push('===== AKTIVITAS TERBARU =====');
+    csvRows.push('Aktivitas,Event,Waktu');
+    
+    dashboardData.recentActivity.forEach((activity) => {
+      csvRows.push([
+        '"' + activity.action.replace(/"/g, '""') + '"',
+        '"' + activity.event.replace(/"/g, '""') + '"',
+        activity.time
+      ].join(','));
+    });
+    
+    csvRows.push('');
+    csvRows.push('');
+    csvRows.push('===== END OF REPORT =====');
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+    const filename = `dashboard_complete_report_${dateStr}_${timeStr}.csv`;
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const calculateDashboardStats = () => {
     // Calculate total stats from real data
     const totalEvents = events.length;
     const totalParticipants = participants.length; // Real participant count from database
     const activeEvents = events.filter(event => new Date(event.waktu_selesai || event.waktu_mulai) > new Date()).length;
     
-    // Calculate revenue based on actual participants
-    const totalRevenue = events.reduce((sum, event) => {
-      const harga = parseFloat(event.harga_tiket) || 0;
-      const eventParticipants = participants.filter(p => p.kegiatan_id === event.id).length;
-      return sum + (harga * eventParticipants);
+    // Calculate revenue based on actual participants with total_harga (matching ListParticipants page)
+    const registeredParticipants = participants.filter(p => {
+      // Include all participants that have total_harga (either > 0 or = 0 for free tickets)
+      return p.total_harga !== null && p.total_harga !== undefined;
+    });
+    
+    const totalRevenue = registeredParticipants.reduce((sum, p) => {
+      const harga = parseFloat(p.total_harga) || 0;
+      return sum + harga;
     }, 0);
     
     // Calculate admin income (10% commission)
@@ -60,19 +181,21 @@ export default function AdminDashboard() {
 
     // Generate monthly stats from real data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    const currentYear = new Date().getFullYear();
+    // Gunakan tahun 2025 untuk data yang sudah di-seed
+    const targetYear = 2025;
     
     const monthlyStats = months.map((month, index) => {
+      // Filter events berdasarkan waktu_mulai
       const monthEvents = events.filter(event => {
         const eventDate = new Date(event.waktu_mulai);
-        return eventDate.getMonth() === index && eventDate.getFullYear() === currentYear;
+        return eventDate.getMonth() === index && eventDate.getFullYear() === targetYear;
       });
 
+      // PERBAIKAN: Filter participants berdasarkan created_at (tanggal pendaftaran), BUKAN event.waktu_mulai
       const monthParticipants = participants.filter(participant => {
-        const event = events.find(e => e.id === participant.kegiatan_id);
-        if (!event) return false;
-        const eventDate = new Date(event.waktu_mulai);
-        return eventDate.getMonth() === index && eventDate.getFullYear() === currentYear;
+        if (!participant.created_at) return false;
+        const registrationDate = new Date(participant.created_at);
+        return registrationDate.getMonth() === index && registrationDate.getFullYear() === targetYear;
       });
 
       return {
@@ -178,7 +301,7 @@ export default function AdminDashboard() {
     {
       id: 4,
       title: "Total Revenue",
-      value: `Rp ${dashboardData.totalRevenue.toLocaleString('id-ID')}`,
+      value: formatCompactRupiah(dashboardData.totalRevenue),
       change: "+15.8%",
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +313,7 @@ export default function AdminDashboard() {
     {
       id: 5,
       title: "Pendapatan Admin",
-      value: `Rp ${dashboardData.adminIncome.toLocaleString('id-ID')}`,
+      value: formatCompactRupiah(dashboardData.adminIncome),
       change: "+15.8%",
       subtitle: "Komisi 10%",
       icon: (
@@ -203,7 +326,7 @@ export default function AdminDashboard() {
     {
       id: 6,
       title: "Pendapatan Panitia",
-      value: `Rp ${dashboardData.organizerIncome.toLocaleString('id-ID')}`,
+      value: formatCompactRupiah(dashboardData.organizerIncome),
       change: "+15.8%",
       subtitle: "Total 90%",
       icon: (
@@ -257,29 +380,50 @@ export default function AdminDashboard() {
             <p className="text-[#4A7FA7] text-sm lg:text-base">Overview statistik dan analisis event</p>
             <div className="h-1 w-32 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] rounded-full mt-2 animate-pulse"></div>
           </div>
+          <button
+            onClick={exportDashboardData}
+            className="px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+          </button>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {stats.map((stat) => (
-            <div key={stat.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group hover:scale-105 h-full">
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-[#4A7FA7] text-sm font-semibold">{stat.title}</p>
-                    {stat.subtitle && (
-                      <p className="text-xs text-gray-500 font-medium">{stat.subtitle}</p>
-                    )}
-                    <h3 className="text-xl lg:text-2xl font-bold text-[#0A1931]">{stat.value}</h3>
-                    <p className="text-green-600 text-xs font-semibold">{stat.change}</p>
-                  </div>
-                  <div className={`w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    {stat.icon}
+          {stats.map((stat) => {
+            // Check if this is a revenue card (has "Rp" in value)
+            const isRevenueCard = stat.value.includes('Rp');
+            
+            return (
+              <div key={stat.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group hover:scale-105 h-full">
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2 flex-1 pr-4">
+                      <p className="text-[#4A7FA7] text-sm font-semibold">{stat.title}</p>
+                      {stat.subtitle && (
+                        <p className="text-xs text-gray-500 font-medium">{stat.subtitle}</p>
+                      )}
+                      {/* Font kecil hanya untuk card revenue, card lainnya tetap besar */}
+                      <h3 className={`${
+                        isRevenueCard 
+                          ? 'text-sm lg:text-base' 
+                          : 'text-xl lg:text-2xl'
+                      } font-bold text-[#0A1931] break-words`}>
+                        {stat.value}
+                      </h3>
+                      <p className="text-green-600 text-xs font-semibold">{stat.change}</p>
+                    </div>
+                    <div className={`w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                      {stat.icon}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Charts Row 1 */}
@@ -342,27 +486,113 @@ export default function AdminDashboard() {
         {/* Top 10 Events Chart */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 lg:p-8">
           <div className="mb-6">
-            <h2 className="text-lg lg:text-xl font-semibold text-[#0A1931]">10 Event dengan Peserta Terbanyak</h2>
-            <p className="text-gray-600 text-sm mt-1">Ranking event berdasarkan jumlah peserta</p>
+            <h2 className="text-lg lg:text-xl font-semibold text-[#0A1931] flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-lg flex items-center justify-center shadow-sm">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              10 Event dengan Peserta Terbanyak
+            </h2>
+            <p className="text-gray-600 text-sm mt-2 ml-13">Ranking event berdasarkan jumlah peserta terdaftar</p>
           </div>
-          <div className="mt-6">
+          
+          {/* Chart */}
+          <div className="mt-6 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-xl p-6">
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={dashboardData.topEvents} layout="horizontal" margin={{ top: 20, right: 30, left: 120, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#4A7FA7/20" />
-                <XAxis type="number" tick={{ fill: '#4A7FA7', fontSize: 12 }} />
-                <YAxis dataKey="name" type="category" width={100} tick={{ fill: '#4A7FA7', fontSize: 11 }} />
+              <BarChart data={dashboardData.topEvents} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <defs>
+                  <linearGradient id="colorParticipants" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4A7FA7" stopOpacity={0.9}/>
+                    <stop offset="95%" stopColor="#1A3D63" stopOpacity={0.7}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#4A7FA7" opacity={0.2} />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={100}
+                  interval={0}
+                  tick={{ fill: '#4A7FA7', fontSize: 10 }}
+                  tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value}
+                />
+                <YAxis tick={{ fill: '#4A7FA7', fontSize: 12 }} label={{ value: 'Jumlah Peserta', angle: -90, position: 'insideLeft', style: { fill: '#4A7FA7' } }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#F6FAFD',
-                    border: '2px solid #4A7FA7/20',
+                    backgroundColor: '#ffffff',
+                    border: '2px solid #4A7FA7',
                     borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                    padding: '12px'
                   }}
+                  labelStyle={{ color: '#0A1931', fontWeight: 'bold', marginBottom: '8px' }}
+                  itemStyle={{ color: '#4A7FA7' }}
+                  formatter={(value, name) => [
+                    `${value} peserta`,
+                    'Total Peserta'
+                  ]}
                 />
-                <Legend />
-                <Bar dataKey="participants" fill="#B3CFE5" name="Jumlah Peserta" radius={[0, 4, 4, 0]} />
+                <Bar 
+                  dataKey="participants" 
+                  fill="url(#colorParticipants)" 
+                  name="Jumlah Peserta" 
+                  radius={[8, 8, 0, 0]}
+                  animationDuration={1000}
+                />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+
+          {/* Table View */}
+          <div className="mt-8">
+            <h3 className="text-md font-semibold text-[#0A1931] mb-4">Detail Ranking Event</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white">
+                    <th className="px-4 py-3 text-left text-sm font-semibold rounded-tl-lg">Rank</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Nama Event</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold rounded-tr-lg">Jumlah Peserta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {dashboardData.topEvents.map((event, index) => (
+                    <tr key={index} className="hover:bg-blue-50 transition-colors duration-200">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          {index === 0 && (
+                            <span className="text-2xl">🥇</span>
+                          )}
+                          {index === 1 && (
+                            <span className="text-2xl">🥈</span>
+                          )}
+                          {index === 2 && (
+                            <span className="text-2xl">🥉</span>
+                          )}
+                          {index > 2 && (
+                            <span className="w-8 h-8 bg-gradient-to-br from-[#B3CFE5] to-[#4A7FA7] text-white rounded-full flex items-center justify-center font-bold text-sm">
+                              {index + 1}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="font-semibold text-[#0A1931]">{event.name}</p>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-full text-sm shadow-sm">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          {event.participants}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
