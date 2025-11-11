@@ -55,14 +55,13 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
   const scrollRef1 = useRef(null);
   const scrollRef2 = useRef(null);
 
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchTestimonials = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Add dummy testimonial data
-        const dummyTestimonials = [
+      // Add dummy testimonial data
+      const dummyTestimonials = [
           {
             id: 1,
             display_name: "Andi Pratama",
@@ -137,19 +136,16 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
           }
         ];
 
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
         try {
           const response = await testimonialService.getAll({
-            per_page: 20
+            per_page: 20,
+            _t: new Date().getTime() // Prevent caching
           });
 
           console.log('Testimonial API Response:', response.data);
 
           if (response.data.success) {
             // Map API data to match expected format
-            console.log('Raw testimonial data:', response.data.data);
             const mappedTestimonials = response.data.data.map(item => ({
               id: item.id,
               display_name: item.user?.nama_lengkap || item.user?.name || 'Anonymous',
@@ -162,8 +158,6 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
               event_category: item.event_category || item.event?.judul_kegiatan || 'Event'
             }));
             
-            console.log('Mapped testimonials:', mappedTestimonials);
-            console.log('Final testimonials array:', [...dummyTestimonials, ...mappedTestimonials]);
             setTestimonials([...dummyTestimonials, ...mappedTestimonials]);
           } else {
             // Use dummy data if API fails
@@ -182,8 +176,20 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
       }
     };
 
-    fetchTestimonials();
   }, []);
+
+  // Expose refresh function to window
+  useEffect(() => {
+    window.refreshTestimonials = fetchTestimonials;
+    return () => {
+      delete window.refreshTestimonials;
+    };
+  }, [fetchTestimonials]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTestimonials();
+  }, [fetchTestimonials]);
 
   // Duplicate testimonials for seamless infinite loop
   const duplicatedTestimonials = [...testimonials, ...testimonials];

@@ -395,6 +395,11 @@ export default function HomePage() {
         setShowReviewSuccessPopup(true);
         setShowReviewForm(false);
         setNewReview({ rating: 5, comment: '', eventId: '' });
+        
+        // Refresh testimonials after successful submission
+        if (window.refreshTestimonials) {
+          await window.refreshTestimonials();
+        }
       } else {
         throw new Error(response.data.message || 'Gagal mengirim testimoni');
       }

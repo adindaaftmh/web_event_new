@@ -5,6 +5,7 @@ import { SidebarProvider } from './contexts/SidebarContext';
 import { RecommendedEventsProvider } from './contexts/RecommendedEventsContext';
 import { InterestingFactsProvider } from './contexts/InterestingFactsContext';
 import SmoothNavigation from './components/SmoothNavigation';
+import IdleTimeoutHandler from './components/IdleTimeoutHandler';
 
 import HomePage from './pages/HomePage.jsx';
 import EventDetail from './pages/EventDetail.jsx';
@@ -47,6 +48,7 @@ export default function App() {
           <SidebarProvider>
             <Router>
               <SmoothNavigation />
+              <IdleTimeoutHandler />
               <Routes>
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
