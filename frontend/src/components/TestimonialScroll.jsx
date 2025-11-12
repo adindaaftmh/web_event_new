@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { testimonialService } from "../services/apiService";
 
 const TestimonialCard = ({ testimonial }) => {
@@ -62,120 +62,118 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
 
       // Add dummy testimonial data
       const dummyTestimonials = [
-          {
-            id: 1,
-            display_name: "Andi Pratama",
-            display_role: "Siswa Kelas XII RPL",
-            avatar_url: "https://ui-avatars.com/api/?name=Andi+Pratama&background=4A7FA7&color=ffffff&size=56",
-            rating: 5,
-            testimonial: "Workshop IT Intensif sangat membantu saya memahami teknologi terbaru. Materinya sangat aplikatif dan instrukturnya berpengalaman. Highly recommended!",
-            event_category: "Workshop IT"
-          },
-          {
-            id: 2,
-            display_name: "Sari Dewi",
-            display_role: "Siswa Kelas XI TKJ",
-            avatar_url: "https://ui-avatars.com/api/?name=Sari+Dewi&background=10B981&color=ffffff&size=56",
-            rating: 5,
-            testimonial: "Turnamen Futsal antar kelas sangat seru! Selain olahraga, juga mempererat tali persaudaraan antar siswa. Panitia juga sangat profesional.",
-            event_category: "Olahraga"
-          },
-          {
-            id: 3,
-            display_name: "Budi Santoso",
-            display_role: "Siswa Kelas XII MM",
-            avatar_url: "https://ui-avatars.com/api/?name=Budi+Santoso&background=8B5CF6&color=ffffff&size=56",
-            rating: 4,
-            testimonial: "Festival Budaya Nusantara membuka wawasan saya tentang kekayaan budaya Indonesia. Pertunjukan tari tradisionalnya sangat memukau!",
-            event_category: "Seni & Budaya"
-          },
-          {
-            id: 4,
-            display_name: "Maya Putri",
-            display_role: "Siswa Kelas XI RPL",
-            avatar_url: "https://ui-avatars.com/api/?name=Maya+Putri&background=F59E0B&color=ffffff&size=56",
-            rating: 5,
-            testimonial: "Seminar Kewirausahaan memberikan inspirasi besar untuk memulai bisnis. Speaker-nya adalah entrepreneur sukses yang sharing pengalaman nyata.",
-            event_category: "Bisnis"
-          },
-          {
-            id: 5,
-            display_name: "Rizki Firmansyah",
-            display_role: "Siswa Kelas XII TKJ",
-            avatar_url: "https://ui-avatars.com/api/?name=Rizki+Firmansyah&background=EF4444&color=ffffff&size=56",
-            rating: 5,
-            testimonial: "Pameran Karya Siswa memotivasi saya untuk lebih kreatif. Melihat karya teman-teman yang luar biasa membuat saya ingin berkontribusi lebih.",
-            event_category: "Pameran"
-          },
-          {
-            id: 6,
-            display_name: "Dina Maharani",
-            display_role: "Siswa Kelas XI MM",
-            avatar_url: "https://ui-avatars.com/api/?name=Dina+Maharani&background=EC4899&color=ffffff&size=56",
-            rating: 4,
-            testimonial: "Lomba Desain Grafis sangat menantang! Kompetisinya ketat tapi fair. Saya belajar banyak teknik baru dari peserta lain.",
-            event_category: "Kompetisi"
-          },
-          {
-            id: 7,
-            display_name: "Fajar Nugroho",
-            display_role: "Alumni 2023",
-            avatar_url: "https://ui-avatars.com/api/?name=Fajar+Nugroho&background=06B6D4&color=ffffff&size=56",
-            rating: 5,
-            testimonial: "Event-event di SMKN 4 Bogor selalu berkualitas. Sebagai alumni, saya bangga melihat sekolah terus berinovasi dalam pendidikan.",
-            event_category: "Alumni"
-          },
-          {
-            id: 8,
-            display_name: "Indira Sari",
-            display_role: "Siswa Kelas XII RPL",
-            avatar_url: "https://ui-avatars.com/api/?name=Indira+Sari&background=84CC16&color=ffffff&size=56",
-            rating: 5,
-            testimonial: "Fasilitas event sangat lengkap dan modern. Tim panitia juga sangat responsif dan membantu. Pengalaman yang tak terlupakan!",
-            event_category: "Fasilitas"
-          }
-        ];
+        {
+          id: 1,
+          display_name: "Andi Pratama",
+          display_role: "Siswa Kelas XII RPL",
+          avatar_url: "https://ui-avatars.com/api/?name=Andi+Pratama&background=4A7FA7&color=ffffff&size=56",
+          rating: 5,
+          testimonial: "Workshop IT Intensif sangat membantu saya memahami teknologi terbaru. Materinya sangat aplikatif dan instrukturnya berpengalaman. Highly recommended!",
+          event_category: "Workshop IT"
+        },
+        {
+          id: 2,
+          display_name: "Sari Dewi",
+          display_role: "Siswa Kelas XI TKJ",
+          avatar_url: "https://ui-avatars.com/api/?name=Sari+Dewi&background=10B981&color=ffffff&size=56",
+          rating: 5,
+          testimonial: "Turnamen Futsal antar kelas sangat seru! Selain olahraga, juga mempererat tali persaudaraan antar siswa. Panitia juga sangat profesional.",
+          event_category: "Olahraga"
+        },
+        {
+          id: 3,
+          display_name: "Budi Santoso",
+          display_role: "Siswa Kelas XII MM",
+          avatar_url: "https://ui-avatars.com/api/?name=Budi+Santoso&background=8B5CF6&color=ffffff&size=56",
+          rating: 4,
+          testimonial: "Festival Budaya Nusantara membuka wawasan saya tentang kekayaan budaya Indonesia. Pertunjukan tari tradisionalnya sangat memukau!",
+          event_category: "Seni & Budaya"
+        },
+        {
+          id: 4,
+          display_name: "Maya Putri",
+          display_role: "Siswa Kelas XI RPL",
+          avatar_url: "https://ui-avatars.com/api/?name=Maya+Putri&background=F59E0B&color=ffffff&size=56",
+          rating: 5,
+          testimonial: "Seminar Kewirausahaan memberikan inspirasi besar untuk memulai bisnis. Speaker-nya adalah entrepreneur sukses yang sharing pengalaman nyata.",
+          event_category: "Bisnis"
+        },
+        {
+          id: 5,
+          display_name: "Rizki Firmansyah",
+          display_role: "Siswa Kelas XII TKJ",
+          avatar_url: "https://ui-avatars.com/api/?name=Rizki+Firmansyah&background=EF4444&color=ffffff&size=56",
+          rating: 5,
+          testimonial: "Pameran Karya Siswa memotivasi saya untuk lebih kreatif. Melihat karya teman-teman yang luar biasa membuat saya ingin berkontribusi lebih.",
+          event_category: "Pameran"
+        },
+        {
+          id: 6,
+          display_name: "Dina Maharani",
+          display_role: "Siswa Kelas XI MM",
+          avatar_url: "https://ui-avatars.com/api/?name=Dina+Maharani&background=EC4899&color=ffffff&size=56",
+          rating: 4,
+          testimonial: "Lomba Desain Grafis sangat menantang! Kompetisinya ketat tapi fair. Saya belajar banyak teknik baru dari peserta lain.",
+          event_category: "Kompetisi"
+        },
+        {
+          id: 7,
+          display_name: "Fajar Nugroho",
+          display_role: "Alumni 2023",
+          avatar_url: "https://ui-avatars.com/api/?name=Fajar+Nugroho&background=06B6D4&color=ffffff&size=56",
+          rating: 5,
+          testimonial: "Event-event di SMKN 4 Bogor selalu berkualitas. Sebagai alumni, saya bangga melihat sekolah terus berinovasi dalam pendidikan.",
+          event_category: "Alumni"
+        },
+        {
+          id: 8,
+          display_name: "Indira Sari",
+          display_role: "Siswa Kelas XII RPL",
+          avatar_url: "https://ui-avatars.com/api/?name=Indira+Sari&background=84CC16&color=ffffff&size=56",
+          rating: 5,
+          testimonial: "Fasilitas event sangat lengkap dan modern. Tim panitia juga sangat responsif dan membantu. Pengalaman yang tak terlupakan!",
+          event_category: "Fasilitas"
+        }
+      ];
 
-        try {
-          const response = await testimonialService.getAll({
-            per_page: 20,
-            _t: new Date().getTime() // Prevent caching
-          });
+      try {
+        const response = await testimonialService.getAll({
+          per_page: 20,
+          _t: new Date().getTime() // Prevent caching
+        });
 
-          console.log('Testimonial API Response:', response.data);
+        console.log('Testimonial API Response:', response.data);
 
-          if (response.data.success) {
-            // Map API data to match expected format
-            const mappedTestimonials = response.data.data.map(item => ({
-              id: item.id,
-              display_name: item.user?.nama_lengkap || item.user?.name || 'Anonymous',
-              display_role: item.user?.pendidikan_terakhir || 'Participant',
-              avatar_url: item.user?.profile_image 
-                ? `http://localhost:8000/${item.user.profile_image}`
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.nama_lengkap || 'User')}&background=4A7FA7&color=ffffff&size=56`,
-              rating: item.rating || 5,
-              testimonial: item.testimonial,
-              event_category: item.event_category || item.event?.judul_kegiatan || 'Event'
-            }));
-            
-            setTestimonials([...dummyTestimonials, ...mappedTestimonials]);
-          } else {
-            // Use dummy data if API fails
-            setTestimonials(dummyTestimonials);
-          }
-        } catch (apiError) {
-          console.error('API Error:', apiError);
+        if (response.data.success) {
+          // Map API data to match expected format
+          const mappedTestimonials = response.data.data.map(item => ({
+            id: item.id,
+            display_name: item.user?.nama_lengkap || item.user?.name || 'Anonymous',
+            display_role: item.user?.pendidikan_terakhir || 'Participant',
+            avatar_url: item.user?.profile_image 
+              ? `http://localhost:8000/${item.user.profile_image}`
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.nama_lengkap || 'User')}&background=4A7FA7&color=ffffff&size=56`,
+            rating: item.rating || 5,
+            testimonial: item.testimonial,
+            event_category: item.event_category || item.event?.judul_kegiatan || 'Event'
+          }));
+          
+          setTestimonials([...dummyTestimonials, ...mappedTestimonials]);
+        } else {
           // Use dummy data if API fails
           setTestimonials(dummyTestimonials);
         }
-      } catch (error) {
-        console.error("Error fetching testimonials:", error);
-        // Silently handle error, don't show error message to user
-      } finally {
-        setLoading(false);
+      } catch (apiError) {
+        console.error('API Error:', apiError);
+        // Use dummy data if API fails
+        setTestimonials(dummyTestimonials);
       }
-    };
-
+    } catch (error) {
+      console.error("Error fetching testimonials:", error);
+      // Silently handle error, don't show error message to user
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Expose refresh function to window

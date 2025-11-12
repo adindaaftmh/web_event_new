@@ -39,6 +39,7 @@ import MonthlyActivityReport from './pages/admin/MonthlyActivityReport.jsx';
 import EventParticipantRecap from './pages/admin/EventParticipantRecap.jsx';
 import Messages from './pages/admin/Messages.jsx';
 import AdminProfile from './pages/admin/AdminProfile.jsx';
+import RevenueRecap from './pages/admin/RevenueRecap.jsx';
 
 export default function App() {
   return (
@@ -88,6 +89,9 @@ export default function App() {
 
             {/* Messages */}
             <Route path="/admin/messages" element={<Messages />} />
+
+            {/* Revenue */}
+            <Route path="/admin/revenue/recap" element={<RevenueRecap />} />
 
             {/* Settings Submenu */}
             <Route path="/admin/settings/flyer" element={<UpdateFlyer />} />
