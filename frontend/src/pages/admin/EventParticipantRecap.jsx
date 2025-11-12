@@ -9,7 +9,7 @@ import {
   Filter, ChevronDown, FileText
 } from 'lucide-react';
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://dynotix-production.up.railway.app/api";
 
 export default function EventParticipantRecap() {
   const [loading, setLoading] = useState(true);

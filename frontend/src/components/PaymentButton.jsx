@@ -123,7 +123,7 @@ const PaymentButton = ({ amount, name, email, phone, onSuccess, onPending, onErr
           // Token created successfully, now charge it via backend
           try {
             console.log('💳 Charging card...');
-            const chargeResponse = await axios.post("http://localhost:8000/api/payment/charge-with-token", {
+            const chargeResponse = await axios.post("https://dynotix-production.up.railway.app/api/payment/charge-with-token", {
               order_id: paymentData.orderId,
               token_id: response.id,
               authentication_id: response.authentication_id,
@@ -175,7 +175,7 @@ const PaymentButton = ({ amount, name, email, phone, onSuccess, onPending, onErr
     setIsLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8000/api/create-transaction", {
+      const res = await axios.post("https://dynotix-production.up.railway.app/api/create-transaction", {
         amount,
         name,
         email,

@@ -5,7 +5,7 @@ import Navbar from "../components/Navbar";
 import JigsawCaptcha from "../components/JigsawCaptcha";
 import oceanBg from "../assets/ocean.jpg";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://dynotix-production.up.railway.app/api";
 
 export default function Contact() {
   const navigate = useNavigate();

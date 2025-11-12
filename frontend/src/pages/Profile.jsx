@@ -1046,7 +1046,7 @@ export default function Profile() {
                             if (activity.eventFlyer.startsWith('http://') || activity.eventFlyer.startsWith('https://')) {
                               flyerSrc = activity.eventFlyer;
                             } else {
-                              flyerSrc = `http://localhost:8000/storage/${activity.eventFlyer}`;
+                              flyerSrc = `https://dynotix-production.up.railway.app/storage/${activity.eventFlyer}`;
                             }
                           }
                           
@@ -1356,7 +1356,7 @@ export default function Profile() {
                             if (registration.eventFlyer.startsWith('http://') || registration.eventFlyer.startsWith('https://')) {
                               flyerSrc = registration.eventFlyer;
                             } else {
-                              flyerSrc = `http://localhost:8000/storage/${registration.eventFlyer}`;
+                              flyerSrc = `https://dynotix-production.up.railway.app/storage/${registration.eventFlyer}`;
                             }
                           }
                           

@@ -9,7 +9,7 @@ import {
   Smile, Palette, Lightbulb, Heart, Edit, Clock, ChevronDown, Loader 
 } from "lucide-react";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://dynotix-production.up.railway.app/api";
 
 export default function UpdateRecommendedEvents() {
   const { isExpanded } = useSidebar();

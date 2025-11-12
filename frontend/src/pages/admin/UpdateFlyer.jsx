@@ -4,7 +4,7 @@ import AdminLayout from "../../components/AdminLayout";
 import { Upload, Eye, Edit3, Trash2, Plus, Save, X, Image as ImageIcon, ArrowUp, ArrowDown, Loader, CheckCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://dynotix-production.up.railway.app/api";
 
 export default function UpdateFlyer() {
   const { isExpanded } = useSidebar();

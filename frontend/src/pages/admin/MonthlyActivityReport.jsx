@@ -12,7 +12,7 @@ import {
   Eye, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown
 } from 'lucide-react';
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://dynotix-production.up.railway.app/api";
 
 export default function MonthlyActivityReport() {
   const [loading, setLoading] = useState(true);

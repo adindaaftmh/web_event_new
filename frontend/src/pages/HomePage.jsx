@@ -19,7 +19,7 @@ import { BookOpen, Smile, Palette, Lightbulb, Heart, Edit } from 'lucide-react';
 import { testimonialService } from '../services/apiService';
 import apiClient from '../config/api';
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://dynotix-production.up.railway.app/api";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -876,7 +876,7 @@ export default function HomePage() {
                           if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
                             flyerSrc = event.flyer_kegiatan;
                           } else {
-                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
+                            flyerSrc = `https://dynotix-production.up.railway.app/storage/${event.flyer_kegiatan}`;
                           }
                         }
 
@@ -1109,7 +1109,7 @@ export default function HomePage() {
                           if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
                             flyerSrc = event.flyer_kegiatan;
                           } else {
-                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
+                            flyerSrc = `https://dynotix-production.up.railway.app/storage/${event.flyer_kegiatan}`;
                           }
                         }
 

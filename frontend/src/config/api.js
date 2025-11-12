@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Konfigurasi base URL untuk backend Laravel
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'https://dynotix-production.up.railway.app/api';
 
 // Membuat instance axios dengan konfigurasi default
 const apiClient = axios.create({

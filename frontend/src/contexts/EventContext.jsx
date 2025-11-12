@@ -26,7 +26,7 @@ export const EventProvider = ({ children }) => {
     const flyerUrl = event.flyer_url
       || (event.flyer_kegiatan && (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')
         ? event.flyer_kegiatan
-        : `http://localhost:8000/storage/${event.flyer_kegiatan}`));
+        : `https://dynotix-production.up.railway.app/storage/${event.flyer_kegiatan}`));
 
     return {
       id: event.id,

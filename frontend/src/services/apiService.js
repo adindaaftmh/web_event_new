@@ -2,7 +2,7 @@ import apiClient, { publicApiClient } from '../config/api';
 import axios from 'axios';
 
 // Konfigurasi base URL untuk backend Laravel
-const API_BASE_URL = 'https://dynotix-production.up.railway.app/';
+const API_BASE_URL = 'https://dynotix-production.up.railway.app/api';
 
 // Membuat instance axios untuk file uploads (tanpa interceptors default)
 export const fileUploadClient = axios.create({

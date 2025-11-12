@@ -151,7 +151,7 @@ const TestimonialScroll = ({ onAddTestimonial }) => {
             display_name: item.user?.nama_lengkap || item.user?.name || 'Anonymous',
             display_role: item.user?.pendidikan_terakhir || 'Participant',
             avatar_url: item.user?.profile_image 
-              ? `http://localhost:8000/${item.user.profile_image}`
+              ? `https://dynotix-production.up.railway.app/${item.user.profile_image}`
               : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.nama_lengkap || 'User')}&background=4A7FA7&color=ffffff&size=56`,
             rating: item.rating || 5,
             testimonial: item.testimonial,
