@@ -2,16 +2,12 @@
 
 return [
 
-    'paths' => [
-        'api/*',
-        'sanctum/csrf-cookie',
-        'storage/*'
-    ],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://web-event-new.vercel.app', // frontend di Vercel
+        'https://web-event-new.vercel.app', // frontend kamu di Vercel
         'http://localhost:5173',
         'http://127.0.0.1:5173',
     ],
@@ -24,7 +20,6 @@ return [
 
     'max_age' => 0,
 
-    // ⬅️ ubah ini dari false ke true supaya bisa kirim cookie/token
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];
