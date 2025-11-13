@@ -138,3 +138,8 @@
         Route::post('create-transaction', [PaymentController::class, 'createTransaction']);
         Route::post('payment/charge-with-token', [PaymentController::class, 'chargeWithToken']); // Direct charge
         Route::post('payment/notification', [PaymentController::class, 'notification']); // webhook
+
+        //ping route
+        Route::get('/ping', function () {
+            return response()->json(['message' => 'pong']);
+        });
