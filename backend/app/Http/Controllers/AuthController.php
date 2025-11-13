@@ -157,15 +157,19 @@ class AuthController extends Controller
             \Log::info('Expires at: ' . $otp->expires_at->format('Y-m-d H:i:s'));
             \Log::info('==============================');
             
-            // Try to send email, but don't fail if email not configured
+            // Generate attractive email template and send OTP for password reset
             try {
-                Mail::to($request->email)->send(new OtpMail(
+                $htmlContent = \App\Services\BrevoService::generateForgotPasswordEmailTemplate(
                     $otp->otp_code,
+                    $otp->expires_at->format('H:i:s')
+                );
+                
+                \App\Services\BrevoService::sendEmail(
                     $request->email,
-                    $otp->expires_at,
-                    'forgot_password' // Type untuk reset password
-                ));
-                \Log::info('✅ Email OTP berhasil dikirim ke: ' . $request->email);
+                    'Reset Password - Kode OTP Anda',
+                    $htmlContent
+                );
+                \Log::info('✅ Email OTP reset password berhasil dikirim ke: ' . $request->email);
             } catch (\Exception $mailError) {
                 \Log::error('❌ Email sending failed: ' . $mailError->getMessage());
                 \Log::warning('OTP logged instead - check laravel.log');

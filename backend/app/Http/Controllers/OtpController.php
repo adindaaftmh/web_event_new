@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\OtpCode;
 use App\Models\User;
-use App\Mail\OtpMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -39,11 +37,16 @@ class OtpController extends Controller
             
             \Log::info('OTP Generated:', ['email' => $email, 'otp_code' => $otp->otp_code]);
             
-            //otp
-           \App\Services\BrevoService::sendEmail(
-            $email,
-            'Kode OTP Registrasi Anda',
-            "<p>Halo,</p><p>Kode OTP Anda adalah <strong>{$otp->otp_code}</strong>.</p><p>Berlaku hingga {$otp->expires_at->format('H:i:s')}.</p>"
+            // Generate attractive email template and send OTP
+            $htmlContent = \App\Services\BrevoService::generateOtpEmailTemplate(
+                $otp->otp_code,
+                $otp->expires_at->format('H:i:s')
+            );
+            
+            \App\Services\BrevoService::sendEmail(
+                $email,
+                'Verifikasi Email - Kode OTP Registrasi Anda',
+                $htmlContent
             );
             
             return response()->json([
