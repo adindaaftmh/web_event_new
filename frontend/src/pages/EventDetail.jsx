@@ -14,6 +14,7 @@ export default function EventDetail() {
   const [totalQuota, setTotalQuota] = useState(0);
   const [registeredCount, setRegisteredCount] = useState(0);
   const [showFlyerModal, setShowFlyerModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const countRef = useRef(null);
 
   // Fetch event data from API
@@ -222,6 +223,16 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
   };
 
   const handleRegister = () => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      // Show login required popup
+      setShowLoginModal(true);
+      return;
+    }
+    
     // Navigate directly to registration page
     navigate(`/event/${id}/register`);
   };
@@ -901,6 +912,146 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
           </div>
         </div>
       </div>
+
+      {/* Login Required Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform animate-scale-in">
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-2xl font-bold text-gray-900 text-center mb-3">
+              Login Diperlukan
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center mb-6 leading-relaxed">
+              Anda harus login terlebih dahulu sebelum dapat mendaftar untuk mengikuti event ini.
+            </p>
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-blue-800 mb-1">Mengapa harus login?</p>
+                  <p className="text-sm text-blue-700">
+                    Dengan login, Anda dapat melacak pendaftaran event, menerima notifikasi, dan mengakses fitur lainnya.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all border border-gray-300"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  navigate('/login');
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Login Sekarang
+              </button>
+            </div>
+
+            {/* Register Link */}
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-600">
+                Belum punya akun?{" "}
+                <button
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    navigate('/register');
+                  }}
+                  className="text-[#4A7FA7] font-bold underline hover:no-underline transition-all"
+                >
+                  Daftar di sini
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flyer Modal */}
+      {showFlyerModal && eventData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowFlyerModal(false)}>
+          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowFlyerModal(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-800 hover:bg-white transition-all shadow-lg"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {(() => {
+              let flyerSrc = null;
+              if (eventData.flyer_url) {
+                flyerSrc = eventData.flyer_url;
+              } else if (eventData.flyer_kegiatan) {
+                if (eventData.flyer_kegiatan.startsWith('http://') || eventData.flyer_kegiatan.startsWith('https://')) {
+                  flyerSrc = eventData.flyer_kegiatan;
+                } else {
+                  flyerSrc = `http://localhost:8000/storage/${eventData.flyer_kegiatan}`;
+                }
+              }
+              
+              return flyerSrc ? (
+                <img
+                  src={flyerSrc}
+                  alt={eventData.judul_kegiatan || eventData.name}
+                  className="w-full h-auto rounded-2xl shadow-2xl"
+                />
+              ) : null;
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Animation Styles for Modal */}
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

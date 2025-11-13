@@ -260,9 +260,13 @@ export default function Register() {
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-3xl" />
           
           <div className="relative z-10">
-            {/* Icon with glow */}
-            <div className="w-16 h-16 mx-auto mb-6 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
-              <svg className="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            {/* Icon with glow - Clickable to Admin Login */}
+            <div 
+              onClick={() => navigate("/admin/login")}
+              className="w-16 h-16 mx-auto mb-6 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/30 shadow-lg cursor-pointer hover:bg-white/30 hover:scale-110 hover:shadow-xl transition-all duration-200 group"
+              title="Klik untuk masuk ke halaman Admin"
+            >
+              <svg className="w-8 h-8 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
                 <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
               </svg>

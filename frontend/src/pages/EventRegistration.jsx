@@ -52,17 +52,27 @@ export default function EventRegistration() {
   // Payment state
   const [showPaymentSection, setShowPaymentSection] = useState(false);
   const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
+  
+  // Login required modal
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Load logged in user from localStorage
+  // Load logged in user from localStorage and check login status
   useEffect(() => {
+    const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        setLoggedInUser(user);
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-      }
+    
+    if (!token || !userData) {
+      // User is not logged in, show login modal
+      setShowLoginModal(true);
+      return;
+    }
+    
+    try {
+      const user = JSON.parse(userData);
+      setLoggedInUser(user);
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+      setShowLoginModal(true);
     }
   }, []);
 
@@ -227,6 +237,16 @@ export default function EventRegistration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('=== HANDLE SUBMIT TRIGGERED ===');
+    
+    // Check if user is logged in (double check in case token expired during form filling)
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      // Show login required popup - this handles edge case where token expired during form filling
+      setShowLoginModal(true);
+      return;
+    }
     
     // Validate form first
     const tipePeserta = event?.tipe_peserta || 'individu';
@@ -510,6 +530,7 @@ export default function EventRegistration() {
     }
   };
 
+  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40">
@@ -517,6 +538,122 @@ export default function EventRegistration() {
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#4A7FA7] mx-auto"></div>
           <p className="mt-4 text-[#0A1931]">Memuat halaman pendaftaran...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Check login status - verify user is logged in before showing form
+  const token = localStorage.getItem('token');
+  const userData = localStorage.getItem('user');
+  const isLoggedIn = token && userData;
+  
+  // If user is not logged in, show login modal and don't render form
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen relative bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 overflow-hidden">
+        <Navbar />
+        
+        {/* Login Required Modal */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform animate-scale-in">
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-2xl font-bold text-gray-900 text-center mb-3">
+              Login Diperlukan
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center mb-6 leading-relaxed">
+              Anda harus login terlebih dahulu sebelum dapat mendaftar untuk mengikuti event ini.
+            </p>
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-blue-800 mb-1">Mengapa harus login?</p>
+                  <p className="text-sm text-blue-700">
+                    Dengan login, Anda dapat melacak pendaftaran event, menerima notifikasi, dan mengakses fitur lainnya.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigate('/');
+                }}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all border border-gray-300"
+              >
+                Kembali
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/login', { state: { redirectTo: `/event/${id}/register` } });
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-semibold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Login Sekarang
+              </button>
+            </div>
+
+            {/* Register Link */}
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-600">
+                Belum punya akun?{" "}
+                <button
+                  onClick={() => {
+                    navigate('/register', { state: { redirectTo: `/event/${id}/register` } });
+                  }}
+                  className="text-[#4A7FA7] font-bold underline hover:no-underline transition-all"
+                >
+                  Daftar di sini
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Animation Styles for Modal */}
+        <style>{`
+          @keyframes fade-in {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @keyframes scale-in {
+            from {
+              opacity: 0;
+              transform: scale(0.9);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+          }
+          .animate-scale-in {
+            animation: scale-in 0.3s ease-out;
+          }
+        `}</style>
       </div>
     );
   }
@@ -1262,6 +1399,7 @@ export default function EventRegistration() {
           }}
         />
       )}
+
     </div>
   );
 }
