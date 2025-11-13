@@ -412,7 +412,7 @@ export default function CategoryEvents() {
                           flyerSrc = event.flyer_kegiatan;
                         } else {
                           // It's a path, construct full URL
-                          flyerSrc = `https://dynotix-production.up.railway.app/storage/${event.flyer_kegiatan}`;
+                          flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
                         }
                       }
                       

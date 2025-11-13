@@ -578,7 +578,7 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                     if (eventData.flyer_kegiatan.startsWith('http://') || eventData.flyer_kegiatan.startsWith('https://')) {
                       flyerSrc = eventData.flyer_kegiatan;
                     } else {
-                      flyerSrc = `https://dynotix-production.up.railway.app/storage/${eventData.flyer_kegiatan}`;
+                      flyerSrc = `http://localhost:8000/storage/${eventData.flyer_kegiatan}`;
                     }
                   }
                   

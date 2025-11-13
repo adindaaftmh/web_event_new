@@ -876,7 +876,7 @@ export default function HomePage() {
                           if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
                             flyerSrc = event.flyer_kegiatan;
                           } else {
-                            flyerSrc = `https://dynotix-production.up.railway.app/storage/${event.flyer_kegiatan}`;
+                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
                           }
                         }
 
@@ -1109,7 +1109,7 @@ export default function HomePage() {
                           if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
                             flyerSrc = event.flyer_kegiatan;
                           } else {
-                            flyerSrc = `https://dynotix-production.up.railway.app/storage/${event.flyer_kegiatan}`;
+                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
                           }
                         }
 
