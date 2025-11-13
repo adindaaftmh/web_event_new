@@ -39,12 +39,12 @@ class OtpController extends Controller
             
             \Log::info('OTP Generated:', ['email' => $email, 'otp_code' => $otp->otp_code]);
             
-            // Send OTP via email
-            Mail::to($email)->send(new OtpMail(
-                $otp->otp_code,
-                $email,
-                $otp->expires_at
-            ));
+            //otp
+           \App\Services\BrevoService::sendEmail(
+            $email,
+            'Kode OTP Registrasi Anda',
+            "<p>Halo,</p><p>Kode OTP Anda adalah <strong>{$otp->otp_code}</strong>.</p><p>Berlaku hingga {$otp->expires_at->format('H:i:s')}.</p>"
+            );
             
             return response()->json([
                 'success' => true,
