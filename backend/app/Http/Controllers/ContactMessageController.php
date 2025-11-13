@@ -6,7 +6,6 @@ use App\Models\ContactMessage;
 use App\Mail\ReplyContactMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
 class ContactMessageController extends Controller
@@ -136,27 +135,25 @@ class ContactMessageController extends Controller
             $message = ContactMessage::findOrFail($id);
             
             Log::info('Attempting to send email to: ' . $message->email);
-            Log::info('Mail configuration:', [
-                'mailer' => config('mail.default'),
-                'from' => config('mail.from')
-            ]);
             
-            // Send email
-            Mail::to($message->email)->send(
-                new ReplyContactMessage(
-                    $message->name,
-                    $message->email,
-                    'Re: ' . $message->subject,
-                    $request->reply_message,
-                    [
-                        'subject' => $message->subject,
-                        'message' => $message->message,
-                        'date' => $message->created_at->format('d F Y, H:i')
-                    ]
-                )
+            // Generate email template and send via Brevo
+            $htmlContent = \App\Services\BrevoService::generateReplyContactTemplate(
+                $message->name,
+                $request->reply_message,
+                [
+                    'subject' => $message->subject,
+                    'message' => $message->message,
+                    'date' => $message->created_at->format('d F Y, H:i')
+                ]
+            );
+            
+            \App\Services\BrevoService::sendEmail(
+                $message->email,
+                'Re: ' . $message->subject,
+                $htmlContent
             );
 
-            Log::info('Email sent successfully');
+            Log::info('Email sent successfully via Brevo');
 
             // Mark as read after replying
             $message->update(['is_read' => true]);
