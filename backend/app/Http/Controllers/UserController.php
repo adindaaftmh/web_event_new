@@ -81,7 +81,7 @@ class UserController extends Controller
             'nonaktif' => 'inactive',
             'pending' => 'pending',
             'active' => 'active',
-            'inactive' => 'inactive'
+            'inactive' => 'nonactive'
         ];
 
         return $statusMap[strtolower($dbStatus)] ?? 'active';
@@ -107,6 +107,13 @@ class UserController extends Controller
     public function updateStatus(Request $request, $id)
     {
         try {
+            // Log incoming request untuk debugging
+            \Log::info('Update Status Request', [
+                'user_id' => $id,
+                'request_data' => $request->all(),
+                'auth_user' => $request->user() ? $request->user()->id : 'not authenticated'
+            ]);
+
             // Check if user is admin
             $currentUser = $request->user();
             // Temporary: Comment out admin check for testing
@@ -122,6 +129,9 @@ class UserController extends Controller
             ]);
 
             if ($validator->fails()) {
+                \Log::warning('Validation failed for update status', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -132,15 +142,29 @@ class UserController extends Controller
             // Find user
             $user = User::find($id);
             if (!$user) {
+                \Log::warning('User not found', ['user_id' => $id]);
                 return response()->json([
                     'success' => false,
                     'message' => 'User tidak ditemukan'
                 ], 404);
             }
 
+            // Get the mapped status
+            $newStatus = $this->mapStatusToDb($request->status);
+            \Log::info('Updating user status', [
+                'user_id' => $id,
+                'old_status' => $user->status_akun,
+                'new_status' => $newStatus
+            ]);
+
             // Update status
-            $user->status_akun = $this->mapStatusToDb($request->status);
+            $user->status_akun = $newStatus;
             $user->save();
+
+            \Log::info('User status updated successfully', [
+                'user_id' => $id,
+                'new_status' => $user->status_akun
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -154,10 +178,20 @@ class UserController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error updating user status', [
+                'user_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengupdate status pengguna',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'debug' => env('APP_DEBUG') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ] : null
             ], 500);
         }
     }

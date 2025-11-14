@@ -13,6 +13,7 @@
         use App\Http\Controllers\RecommendedEventController;
         use App\Http\Controllers\ContactMessageController;
         use App\Http\Controllers\PaymentController;
+        use App\Http\Controllers\ImageUploadController;
 
 
 
@@ -143,3 +144,6 @@
         Route::get('/ping', function () {
             return response()->json(['message' => 'pong']);
         });
+
+        //tambah image dengan cloudinary
+        Route::post('/upload-image', [ImageUploadController::class, 'upload']);
