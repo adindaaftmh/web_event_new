@@ -129,13 +129,6 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
       hasSubmenu: false
     },
     {
-      id: "messages",
-      name: "Pesan Kontak",
-      icon: <Icons.FaEnvelope />,
-      path: "/admin/messages",
-      hasSubmenu: false
-    },
-    {
       id: "revenue",
       name: "Pendapatan",
       icon: (
@@ -144,6 +137,13 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
         </svg>
       ),
       path: "/admin/revenue/recap",
+      hasSubmenu: false
+    },
+    {
+      id: "messages",
+      name: "Pesan Kontak",
+      icon: <Icons.FaEnvelope />,
+      path: "/admin/messages",
       hasSubmenu: false
     },
     {
