@@ -9,8 +9,8 @@ return [
     'allowed_origins' => [
         'https://web-event-new.vercel.app', // frontend kamu di Vercel
         'https://dynotix.vercel.app', //url baruw
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
+        'http://localhost:5183',
+        'http://127.0.0.1:5183',
     ],
 
     'allowed_origins_patterns' => [],

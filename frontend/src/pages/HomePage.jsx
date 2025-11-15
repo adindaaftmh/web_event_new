@@ -1689,100 +1689,155 @@ export default function HomePage() {
       )}
 
       {/* Mobile App Section */}
-      <div id="mobile-app-section" className="relative py-20 overflow-hidden">
-        {/* Background - Color Theme */}
+      <div id="mobile-app-section" className="relative py-24 overflow-hidden">
+        {/* Modern Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0A1931] via-[#1A3D63] to-[#4A7FA7]"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#4A7FA7]/20 via-transparent to-[#0A1931]/30"></div>
         
-        {/* Decorative Elements */}
-        <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-[#4A7FA7]/10 rounded-full blur-2xl"></div>
-        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-white/3 rounded-full blur-xl"></div>
+        {/* Minimal Decorative Elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-20">
+          <div className="absolute top-20 left-[10%] w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          <div className="absolute top-40 right-[20%] w-2 h-2 bg-white rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+          <div className="absolute bottom-32 left-[15%] w-2 h-2 bg-white rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
+          <div className="absolute bottom-20 right-[25%] w-2 h-2 bg-white rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+        </div>
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Content Section */}
-            <div className="text-white order-2 lg:order-1">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-6">
+            {/* Clean Phone Mockup */}
+            <div className="flex justify-center lg:justify-end order-2 lg:order-2">
+              <div className="relative lg:-translate-x-8">
+                {/* Large main phone */}
+                <div className="relative w-52 sm:w-64 lg:w-72 h-[420px] sm:h-[500px] lg:h-[540px] bg-white rounded-[2.8rem] shadow-2xl border-[5px] border-black z-10">
+                  <div className="relative w-full h-full bg-gradient-to-br from-[#0A1931] via-[#102741] to-[#1A3D63] rounded-[2rem] overflow-hidden">
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-black/80 rounded-full"></div>
+                    <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-[#4A7FA7] flex items-center justify-center text-[9px] font-bold text-white">
+                          D
+                        </div>
+                        <span className="text-white/70 text-[11px] font-semibold">Dynotix</span>
+                      </div>
+                      <span className="text-white/60 text-[11px]">9:41</span>
+                    </div>
+                    <div className="p-4 pt-1 space-y-3">
+                      <div className="bg-white/10 rounded-xl p-3 border border-white/10">
+                        <p className="text-white/80 text-xs mb-1">Event Hari Ini</p>
+                        <p className="text-white font-semibold text-sm">Seminar Karir Digital</p>
+                        <p className="text-white/60 text-[11px]">Aula SMKN 4   b7 13.00 WIB</p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between bg-black/20 rounded-lg px-3 py-2">
+                          <div>
+                            <p className="text-white text-xs font-medium">Lomba Desain Poster</p>
+                            <p className="text-white/60 text-[10px]">Besok   b7 09.00 WIB</p>
+                          </div>
+                          <span className="text-[10px] text-[#4A7FA7] bg-white/10 px-2 py-1 rounded-full border border-white/10">Daftar</span>
+                        </div>
+                        <div className="flex items-center justify-between bg-black/15 rounded-lg px-3 py-2">
+                          <div>
+                            <p className="text-white text-xs font-medium">Workshop UI/UX</p>
+                            <p className="text-white/60 text-[10px]">Sabtu   b7 10.00 WIB</p>
+                          </div>
+                          <span className="text-[10px] text-white/80 bg-[#4A7FA7]/60 px-2 py-1 rounded-full">Segera</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-1.5 bg-white/70 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Smaller secondary phone */}
+                <div className="absolute -right-4 sm:-right-6 bottom-2 sm:bottom-4 w-32 sm:w-40 lg:w-44 h-64 sm:h-72 lg:h-80 bg-white rounded-[2.4rem] shadow-2xl border-[5px] border-black z-20">
+                  <div className="relative w-full h-full bg-gradient-to-br from-[#0A1931] via-[#0F3A4F] to-[#1A3D63] rounded-[2rem] overflow-hidden">
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-black/80 rounded-full"></div>
+                    <div className="flex flex-col h-full px-4 pt-8 pb-5">
+                      <div className="w-10 h-10 mx-auto mb-4 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 8h12M6 12h12M6 16h12" />
+                        </svg>
+                      </div>
+
+                      <div className="text-center mb-4">
+                        <p className="text-white font-semibold text-sm">Selamat Datang!</p>
+                        <p className="text-white/70 text-[10px] mt-1">Masuk untuk mengakses event menarik</p>
+                      </div>
+
+                      <div className="space-y-2 text-white/80 text-[10px]">
+                        <div className="space-y-1">
+                          <p className="font-medium">Email</p>
+                          <div className="h-7 rounded-lg border border-white/30 bg-white/10 flex items-center px-2 text-[9px] text-white/60">
+                            Masukkan email Anda
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium">Password</p>
+                          <div className="h-7 rounded-lg border border-white/30 bg-white/10 flex items-center justify-between px-2 text-[9px] text-white/60">
+                            <span>Masukkan password</span>
+                            <span className="text-[10px] text-white/70">•••</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2 mb-2">
+                        <div className="flex items-center gap-1 text-[9px] text-white/80">
+                          <span className="w-3 h-3 rounded border border-white/70 bg-transparent"></span>
+                          <span>Ingat saya</span>
+                        </div>
+                        <button className="text-[9px] text-[#B3E6FF]">Lupa password?</button>
+                      </div>
+
+                      <button className="w-full h-8 rounded-lg bg-white text-[#0A1931] text-[10px] font-semibold mb-2 shadow-sm">
+                        Masuk
+                      </button>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-px flex-1 bg-white/25"></div>
+                        <span className="text-[9px] text-white/70">Atau</span>
+                        <div className="h-px flex-1 bg-white/25"></div>
+                      </div>
+
+                      <button className="w-full h-8 rounded-lg bg-white/10 border border-white/30 flex items-center justify-center gap-2 text-[10px] text-white mb-1">
+                        <span className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-[8px] font-bold text-[#4285F4]">G</span>
+                        <span>Masuk dengan Google</span>
+                      </button>
+
+                      <div className="mt-auto pt-1 text-center text-[9px] text-white/75">
+                        <span>Belum punya akun? </span>
+                        <span className="font-semibold text-white">Daftar</span>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-1.5 bg-white/70 rounded-full"></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="text-white text-center lg:text-left order-1 lg:order-1 lg:translate-x-4">
+              {/* Modern Badge */}
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 backdrop-blur-md rounded-full border border-white/10 mb-6 lg:mb-8">
                 <div className="w-2 h-2 bg-[#4A7FA7] rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold">#Choose Better</span>
+                <span className="text-sm font-medium text-white/90">Segera Hadir</span>
               </div>
               
               {/* Main Heading */}
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                <span className="block">Aplikasi Mobile</span>
-                <span className="block text-[#4A7FA7]">SMKN 4 BOGOR</span>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 lg:mb-6 leading-tight">
+                Aplikasi Mobile
               </h2>
+              <h3 className="text-3xl md:text-4xl lg:text-4xl font-bold mb-6 lg:mb-8">
+                <span className="bg-gradient-to-r from-[#4A7FA7] via-[#6B9FC7] to-white bg-clip-text text-transparent">
+                  Dynotix 
+                </span>
+              </h3>
               
-              {/* Subheading */}
-              <div className="mb-8">
-                <p className="text-xl text-white/90 mb-2">
-                  Empowering Innovation, Driving Success:
-                </p>
-                <h3 className="text-2xl font-bold text-[#4A7FA7] mb-2">
-                  Event App SMKN 4
-                </h3>
-                <p className="text-white/80 leading-relaxed">
-                  Partner Anda dalam Mengakses Event dan Informasi Sekolah dengan Mudah
-                </p>
-              </div>
-              
-              {/* Features List */}
-              <div className="space-y-4 mb-8">
-                {[
-                  { icon: '📅', text: 'Lihat jadwal event terbaru' },
-                  { icon: '🎫', text: 'Daftar event secara online' },
-                  { icon: '🔔', text: 'Notifikasi event penting' },
-                  { icon: '📊', text: 'Statistik dan prestasi sekolah' }
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                      <span className="text-lg">{feature.icon}</span>
-                    </div>
-                    <span className="text-white/90">{feature.text}</span>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Download Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="group flex items-center justify-center gap-3 px-6 py-4 bg-white text-[#0A1931] rounded-xl font-semibold hover:bg-white/90 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
-                  <div className="w-8 h-8 bg-[#0A1931] rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs text-[#0A1931]/70">Download di</div>
-                    <div className="text-sm font-bold">App Store</div>
-                  </div>
-                </button>
-                
-                <button className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#4A7FA7] text-white rounded-xl font-semibold hover:bg-[#4A7FA7]/90 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl border border-white/20">
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs text-white/70">Download di</div>
-                    <div className="text-sm font-bold">Google Play</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-            
-            {/* Image/Phone Mockup Section */}
-            <div className="order-1 lg:order-2 flex justify-center">
-              <div className="relative w-64 h-[500px] bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] rounded-[3rem] shadow-2xl p-4 transform hover:scale-105 transition-transform duration-500">
-                <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden">
-                  <div className="bg-gradient-to-br from-[#0A1931] to-[#4A7FA7] h-full flex items-center justify-center text-white text-6xl">
-                    📱
-                  </div>
-                </div>
-              </div>
+              {/* Simple Description */}
+              <p className="text-base md:text-lg text-white/80 max-w-xl lg:max-w-lg mx-auto lg:mx-0 mb-4 lg:mb-6 leading-relaxed">
+                Aplikasi mobile untuk mengakses event dan informasi dengan mudah.
+              </p>
+              <p className="text-sm md:text-base text-white/60">
+                Kelola pendaftaran, dapatkan pengingat jadwal, dan pantau riwayat kehadiran langsung dari ponsel Anda.
+                <span className="ml-1 text-white/80 font-medium">Segera Hadir.</span>
+              </p>
             </div>
           </div>
         </div>
