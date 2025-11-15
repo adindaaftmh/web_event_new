@@ -78,105 +78,128 @@ const [selectedFile, setSelectedFile] = useState(null);
   }, []);
 
    // Handle image file selection dan upload ke Cloudinary
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const handleImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    // Validasi file
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage('File harus berupa gambar');
-      setShowErrorPopup(true);
-      return;
-    }
+  // RESET STATE ERROR
+  setUploadError(null);
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Ukuran file maksimal 5MB');
-      setShowErrorPopup(true);
-      return;
-    }
+  // Validasi file
+  if (!file.type.startsWith("image/")) {
+    setUploadError("File harus berupa gambar!");
+    return;
+  }
 
-    // Set preview lokal
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+  if (file.size > 5 * 1024 * 1024) {
+    setUploadError("Ukuran file maksimal 5MB");
+    return;
+  }
 
-    try {
-      // Upload ke Cloudinary
-      console.log('Uploading image to Cloudinary...');
-      const result = await uploadImage(file, {
-        folder: 'events/flyers', // Folder di Cloudinary
-        onProgress: (progress) => {
-          console.log('Upload progress:', progress + '%');
-        }
-      });
+  // Preview lokal (AMAN, TANPA ERROR createObjectURL)
+  const localPreview = URL.createObjectURL(file);
+  setPreviewImage(localPreview);
 
-      console.log('Image uploaded successfully:', result.url);
-      
-      // Set URL Cloudinary ke formData
-      setFormData(prev => ({
-        ...prev,
-        flyer_kegiatan: result.url
-      }));
+  // Set uploading state
+  setUploading(true);
+  setUploadProgress(0);
 
-      setErrorMessage('Flyer berhasil diupload!');
-      setShowErrorPopup(true);
-      setTimeout(() => setShowErrorPopup(false), 2000);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      setErrorMessage(error.message || 'Gagal mengupload flyer');
-      setShowErrorPopup(true);
-      setPreviewImage(null);
-      setSelectedFile(null);
-    }
-  };
+  // ============================
+  // UPLOAD KE CLOUDINARY
+  // ============================
+  const formDataCloud = new FormData();
+  formDataCloud.append("file", file);
+  formDataCloud.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+  formDataCloud.append("folder", "events/flyers");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // Debug logging
-      console.log('Form Data:', formData);
-
-      // Validate form
-      if (!formData.judul_kegiatan || !formData.penyelenggara || !formData.lokasi_kegiatan || !formData.waktu_mulai) {
-        alert("Mohon lengkapi semua field yang wajib diisi (Judul, Penyelenggara, Lokasi, Waktu Mulai)");
-        return;
+  try {
+    const res = await axios.post(
+      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      formDataCloud,
+      {
+        onUploadProgress: (p) => {
+          const percent = Math.round((p.loaded * 100) / p.total);
+          setUploadProgress(percent);
+        },
       }
+    );
+
+    // Simpan URL Cloudinary ke formData
+    setFormData((prev) => ({
+      ...prev,
+      flyer_kegiatan: res.data.secure_url,
+    }));
+
+    // Show sukses message
+    setErrorMessage("Flyer berhasil diupload!");
+    setShowErrorPopup(true);
+    setTimeout(() => setShowErrorPopup(false), 2000);
+  } catch (error) {
+    console.error("Cloudinary Upload Error:", error);
+
+    setUploadError("Gagal upload ke Cloudinary. Periksa preset & env.");
+
+    // Reset preview
+    setPreviewImage(null);
+  } finally {
+    setUploading(false);
+  }
+};
+
+   // Handle Submit
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+
+     try {
+    console.log("Form Data:", formData);
+      // Validate form
+      if (
+      !formData.judul_kegiatan ||
+      !formData.penyelenggara ||
+      !formData.lokasi_kegiatan ||
+      !formData.waktu_mulai
+       ) {
+      alert("Mohon lengkapi semua field wajib (Judul, Penyelenggara, Lokasi, Waktu Mulai)");
+      setIsSubmitting(false);
+      return;
+         }
 
       // Validasi H-3: Event harus dibuat minimal 3 hari sebelum tanggal pelaksanaan
-      const eventDate = new Date(formData.waktu_mulai);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset ke awal hari
-      eventDate.setHours(0, 0, 0, 0); // Reset ke awal hari
-      
-      const timeDiff = eventDate.getTime() - today.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      
-      if (daysDiff < 3) {
-        setDaysDifference(daysDiff);
-        setShowLimitPopup(true);
-        setIsSubmitting(false);
-        return;
-      }
+       const eventDate = new Date(formData.waktu_mulai);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(0, 0, 0, 0);
 
+    const timeDiff = eventDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    if (daysDiff < 3) {
+      setDaysDifference(daysDiff);
+      setShowLimitPopup(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+     // VALIDASI FLYER (HARUS SUDAH UPLOAD)
       if (!formData.flyer_kegiatan) {
-        alert("Mohon upload flyer kegiatan");
-        return;
-      }
+      alert("Mohon upload flyer kegiatan terlebih dahulu");
+      setIsSubmitting(false);
+      return;
+        }
 
-      if (!(formData.flyer_kegiatan instanceof File)) {
-        alert("File flyer tidak valid. Mohon upload file gambar yang benar.");
-        return;
-      }
+      if (typeof formData.flyer_kegiatan !== "string") {
+      alert("URL flyer tidak valid. Silakan upload ulang.");
+      setIsSubmitting(false);
+      return;
+        }
 
-      if (!formData.kategori?.nama_kategori) {
-        alert("Mohon pilih kategori kegiatan");
-        return;
-      }
+       // VALIDASI KATEGORI
+       if (!formData.kategori?.nama_kategori) {
+      alert("Mohon pilih kategori kegiatan");
+      setIsSubmitting(false);
+      return;
+    }
 
       // Prepare data for API
       const submitData = {
@@ -563,12 +586,16 @@ const [selectedFile, setSelectedFile] = useState(null);
     <div className="bg-white rounded-xl shadow-lg border border-[#4A7FA7]/20 overflow-hidden hover:shadow-xl transition-all duration-300">
       <div className="relative">
         {formData.flyer_kegiatan ? (
-          <img
-            src={URL.createObjectURL(formData.flyer_kegiatan)}
-            alt="Event Flyer"
+        <img
+          src={
+             formData.flyer_kegiatan instanceof File
+             ? URL.createObjectURL(formData.flyer_kegiatan)
+             : formData.flyer_kegiatan
+              }
+              alt="Event Flyer"
             className="w-full h-48 object-cover"
-          />
-        ) : (
+              />
+              ) : (
           <div className="w-full h-48 bg-gradient-to-br from-[#4A7FA7] to-[#1A3D63] flex items-center justify-center">
             <svg className="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -723,66 +750,79 @@ const [selectedFile, setSelectedFile] = useState(null);
           </div>
 
           {/* Form */}
-          <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-        <label className="block text-sm font-semibold text-[#0A1931] mb-2">
-          Upload Flyer <span className="text-red-500">*</span>
-        </label>
-        <div className="border-2 border-dashed border-[#4A7FA7]/30 rounded-xl p-6 text-center hover:border-[#4A7FA7]/50 transition-colors">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
-            id="flyer-upload"
-            required
-            disabled={uploading}
-          />
-          <label htmlFor="flyer-upload" className="cursor-pointer">
-            {uploading ? (
-              <div className="space-y-3">
-                <div className="w-12 h-12 border-4 border-[#4A7FA7] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-[#4A7FA7] font-semibold">Uploading... {uploadProgress}%</p>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-[#4A7FA7] h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
+<div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-8">
+  <form onSubmit={handleSubmit} className="space-y-6">
+
+    <div>
+      <label className="block text-sm font-semibold text-[#0A1931] mb-2">
+        Upload Flyer <span className="text-red-500">*</span>
+      </label>
+
+      <div className="border-2 border-dashed border-[#4A7FA7]/30 rounded-xl p-6 text-center hover:border-[#4A7FA7]/50 transition-colors">
+        
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          className="hidden"
+          id="flyer-upload"
+          required
+          disabled={uploading}
+        />
+
+        <label htmlFor="flyer-upload" className="cursor-pointer">
+
+          {/* Uploading State */}
+          {uploading ? (
+            <div className="space-y-3">
+              <div className="w-12 h-12 border-4 border-[#4A7FA7] border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-[#4A7FA7] font-semibold">Uploading... {uploadProgress}%</p>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-[#4A7FA7] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
               </div>
+            </div>
             ) : previewImage ? (
-              <div className="space-y-3">
-                <img
-                  src={previewImage}
-                  alt="Flyer Preview"
-                  className="w-32 h-20 object-cover rounded-lg mx-auto border-2 border-[#4A7FA7]/20"
-                />
-                <p className="text-[#4A7FA7] font-semibold text-sm">
-                  {formData.flyer_kegiatan ? '✓ Uploaded ke Cloudinary' : 'Klik untuk mengganti flyer'}
+            /* Preview Image */
+            <div className="space-y-3">
+              <img
+                src={previewImage}
+                alt="Flyer Preview"
+                className="w-32 h-20 object-cover rounded-lg mx-auto border-2 border-[#4A7FA7]/20"
+              />
+              <p className="text-[#4A7FA7] font-semibold text-sm">
+                {formData.flyer_kegiatan ? '✓ Uploaded ke Cloudinary' : 'Klik untuk mengganti flyer'}
+              </p>
+                 {formData.flyer_kegiatan && (
+                <p className="text-xs text-green-600">
+                  URL: {formData.flyer_kegiatan.substring(0, 50)}...
                 </p>
-                {formData.flyer_kegiatan && (
-                  <p className="text-xs text-green-600">URL: {formData.flyer_kegiatan.substring(0, 50)}...</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <svg className="w-12 h-12 text-[#4A7FA7]/50 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk upload flyer</p>
-                <p className="text-xs text-gray-500">JPG, PNG, WEBP (Max 5MB)</p>
-              </div>
-            )}
-          </label>
-        </div>
-        {uploadError && (
-          <p className="text-xs text-red-500 mt-2">❌ {uploadError}</p>
-        )}
-        <p className="text-xs text-[#4A7FA7] mt-2 italic">
-          * Upload flyer akan otomatis tersimpan di Cloudinary
-        </p>
+              )}
+            </div>
+          ) : (
+            /* Default Upload Button */
+            <div className="space-y-3">
+              <svg className="w-12 h-12 text-[#4A7FA7]/50 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-[#4A7FA7] font-semibold text-sm">Klik untuk upload flyer</p>
+              <p className="text-xs text-gray-500">JPG, PNG, WEBP (Max 5MB)</p>
+            </div>
+          )}
+
+        </label>
       </div>
+
+      {uploadError && (
+        <p className="text-xs text-red-500 mt-2">❌ {uploadError}</p>
+      )}
+
+      <p className="text-xs text-[#4A7FA7] mt-2 italic">
+        * Upload flyer akan otomatis tersimpan di Cloudinary
+      </p>
+    </div>
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
