@@ -40,9 +40,15 @@ class Kegiatan extends Model
     /**
      * Get the full URL for the flyer image.
      */
-    public function getFlyerUrlAttribute()
+     public function getFlyerUrlAttribute()
     {
         if ($this->flyer_kegiatan) {
+            // Cek apakah ini URL Cloudinary (sudah full URL)
+            if (str_contains($this->flyer_kegiatan, 'cloudinary.com')) {
+                return $this->flyer_kegiatan; // Return URL Cloudinary langsung
+            }
+            
+            // Jika bukan, berarti path lokal storage
             return url('storage/' . $this->flyer_kegiatan);
         }
         return null;
