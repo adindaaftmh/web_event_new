@@ -1,10 +1,8 @@
 import jsPDF from 'jspdf';
 import logo from '../assets/logo.png';
+import certificateTemplate from '../assets/sertifikat_template.png';
 
-/**
- * Membuat sertifikat modern dengan tema ocean/glassmorphism
- * Menggunakan branding Dynotix dengan bahasa Indonesia formal
- */
+
 export const generateModernCertificate = async (certificateData) => {
   try {
     const {
@@ -81,6 +79,9 @@ export const generateModernCertificate = async (certificateData) => {
 
     // Reset opacity for main content
     pdf.setGState(new pdf.GState({ opacity: 1 }));
+
+    // Draw certificate template background image
+    pdf.addImage(certificateTemplate, 'PNG', 0, 0, pageWidth, pageHeight);
 
     // ===== BORDER / FRAME =====
     // Outer border - gradient simulation

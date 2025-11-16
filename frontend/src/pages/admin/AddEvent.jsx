@@ -6,9 +6,8 @@ import { useCloudinaryUpload } from "../../hooks/useCloudinaryUpload";
 
 export default function AddEvent() {
   const { addEvent } = useEvents();
-    const { uploading, uploadProgress, uploadImage, error: uploadError } = useCloudinaryUpload();
-
-  const [categories, setCategories] = useState([]);
+    const { uploading, uploadProgress, uploadImage } = useCloudinaryUpload();
+const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     judul_kegiatan: "",
     penyelenggara: "",
@@ -34,7 +33,8 @@ export default function AddEvent() {
   const [showLimitPopup, setShowLimitPopup] = useState(false);
   const [daysDifference, setDaysDifference] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
-const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
   const [ticketForm, setTicketForm] = useState({
     nama_tiket: "",
     harga: "",
@@ -77,7 +77,7 @@ const [selectedFile, setSelectedFile] = useState(null);
     fetchCategories();
   }, []);
 
-   // Handle image file selection dan upload ke Cloudinary
+     // Handle image file selection dan upload ke Cloudinary
 const handleImageChange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -100,34 +100,15 @@ const handleImageChange = async (e) => {
   const localPreview = URL.createObjectURL(file);
   setPreviewImage(localPreview);
 
-  // Set uploading state
-  setUploading(true);
-  setUploadProgress(0);
-
-  // ============================
-  // UPLOAD KE CLOUDINARY
-  // ============================
-  const formDataCloud = new FormData();
-  formDataCloud.append("file", file);
-  formDataCloud.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-  formDataCloud.append("folder", "events/flyers");
-
   try {
-    const res = await axios.post(
-      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-      formDataCloud,
-      {
-        onUploadProgress: (p) => {
-          const percent = Math.round((p.loaded * 100) / p.total);
-          setUploadProgress(percent);
-        },
-      }
-    );
+    const result = await uploadImage(file, {
+      folder: "events/flyers",
+    });
 
     // Simpan URL Cloudinary ke formData
     setFormData((prev) => ({
       ...prev,
-      flyer_kegiatan: res.data.secure_url,
+      flyer_kegiatan: result.url,
     }));
 
     // Show sukses message
@@ -137,12 +118,12 @@ const handleImageChange = async (e) => {
   } catch (error) {
     console.error("Cloudinary Upload Error:", error);
 
-    setUploadError("Gagal upload ke Cloudinary. Periksa preset & env.");
+    setUploadError(
+      error?.message || "Gagal upload ke Cloudinary. Periksa preset & env."
+    );
 
     // Reset preview
     setPreviewImage(null);
-  } finally {
-    setUploading(false);
   }
 };
 
