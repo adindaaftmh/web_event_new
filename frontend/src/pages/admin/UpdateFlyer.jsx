@@ -3,6 +3,7 @@ import { useSidebar } from "../../contexts/SidebarContext";
 import AdminLayout from "../../components/AdminLayout";
 import { Upload, Eye, Edit3, Trash2, Plus, Save, X, Image as ImageIcon, ArrowUp, ArrowDown, Loader, CheckCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
+import { useCloudinaryUpload } from "../../hooks/useCloudinaryUpload";
 
 const API_URL = "https://dynotix-production.up.railway.app/api";
 
@@ -21,8 +22,10 @@ export default function UpdateFlyer() {
     title: "",
     order: 1,
     is_active: true,
-    link_url: ""
+    link_url: "",
+    image_url: ""
   });
+  const { uploadImage } = useCloudinaryUpload();
 
   // Fetch flyers from backend
   useEffect(() => {
@@ -81,7 +84,8 @@ export default function UpdateFlyer() {
       title: "", 
       order: flyers.length + 1, 
       is_active: true,
-      link_url: ""
+      link_url: "",
+      image_url: ""
     });
     setPreviewImage(null);
     setSelectedFile(null);
@@ -94,7 +98,8 @@ export default function UpdateFlyer() {
       title: flyer.title,
       order: flyer.order,
       is_active: flyer.is_active,
-      link_url: flyer.link_url || ""
+      link_url: flyer.link_url || "",
+      image_url: flyer.image_url || ""
     });
     setPreviewImage(flyer.image_url);
     setSelectedFile(null);
@@ -160,6 +165,9 @@ export default function UpdateFlyer() {
       if (formData.link_url) {
         formDataToSend.append('link_url', formData.link_url);
       }
+      if (formData.image_url) {
+        formDataToSend.append('image_url', formData.image_url);
+      }
       if (selectedFile) {
         formDataToSend.append('image', selectedFile);
         console.log('Image file attached:', selectedFile.name, selectedFile.size);
@@ -217,20 +225,7 @@ export default function UpdateFlyer() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        showMessage('error', 'File harus berupa gambar');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        showMessage('error', 'Ukuran file maksimal 5MB');
-        return;
-      }
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file);
     }
   };
 
@@ -244,21 +239,49 @@ export default function UpdateFlyer() {
     setDragOver(false);
   };
 
+  const processImageFile = async (file) => {
+    if (!file.type.startsWith('image/')) {
+      showMessage('error', 'File harus berupa gambar');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage('error', 'Ukuran file maksimal 5MB');
+      return;
+    }
+
+    const localPreview = URL.createObjectURL(file);
+    setPreviewImage(localPreview);
+
+    try {
+      const result = await uploadImage(file, {
+        folder: "homepage/flyers",
+      });
+
+      setFormData((prev) => ({
+        ...prev,
+        image_url: result.url,
+      }));
+
+      setSelectedFile(file);
+      showMessage('success', 'Gambar berhasil diupload!');
+    } catch (error) {
+      console.error('Cloudinary Upload Error:', error);
+      showMessage('error', error?.message || 'Gagal upload ke Cloudinary. Silakan coba lagi.');
+      setPreviewImage(null);
+      setSelectedFile(null);
+    }
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      if (file.size > 5 * 1024 * 1024) {
-        showMessage('error', 'Ukuran file maksimal 5MB');
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        showMessage('error', 'File harus berupa gambar');
         return;
       }
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file);
     }
   };
 

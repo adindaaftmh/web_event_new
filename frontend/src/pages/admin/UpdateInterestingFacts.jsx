@@ -6,6 +6,7 @@ import {
   Plus, Edit3, Trash2, X, Eye, CheckCircle, AlertCircle, 
   Sparkles, TrendingUp, BarChart3, Loader, ImageIcon 
 } from "lucide-react";
+import { useCloudinaryUpload } from "../../hooks/useCloudinaryUpload";
 
 export default function UpdateInterestingFacts() {
   const { isExpanded } = useSidebar();
@@ -20,6 +21,7 @@ export default function UpdateInterestingFacts() {
     description: "",
     active: true
   });
+  const { uploadImage } = useCloudinaryUpload();
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
@@ -61,9 +63,35 @@ export default function UpdateInterestingFacts() {
   };
 
   const handleImageFile = (file) => {
+    if (!file.type.startsWith('image/')) {
+      showMessage('error', 'File harus berupa gambar');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage('error', 'Ukuran file maksimal 5MB');
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData({ ...formData, image: reader.result });
+    reader.onloadend = async () => {
+      const localImage = reader.result;
+      setFormData((prev) => ({ ...prev, image: localImage }));
+
+      try {
+        const result = await uploadImage(file, {
+          folder: "homepage/facts",
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          image: result.url,
+        }));
+
+        showMessage('success', 'Gambar berhasil diupload!');
+      } catch (error) {
+        console.error('Cloudinary Upload Error:', error);
+        showMessage('error', error?.message || 'Gagal upload ke Cloudinary. Gambar lokal tetap digunakan.');
+      }
     };
     reader.readAsDataURL(file);
   };
