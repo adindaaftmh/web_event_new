@@ -8,11 +8,11 @@ import logo from '../assets/logo.png';
 export const generateModernCertificate = async (certificateData) => {
   try {
     const {
-      participantName,
-      eventName,
-      eventDate,
-      certificateNumber,
-      issueDate,
+      participantName = 'Peserta',
+      eventName = '-',
+      eventDate = '-',
+      certificateNumber = '-',
+      issueDate = '-',
       organizer = 'Dynotix',
       category = 'Peserta'
     } = certificateData;

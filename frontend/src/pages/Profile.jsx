@@ -576,6 +576,17 @@ export default function Profile() {
       // We need to get waktu_selesai for end date
       const eventStartDate = certificate.eventDate || certificate.date;
       const eventEndDate = certificate.eventEndDate || eventStartDate; // If no end date, use start date
+
+      // Calculate issue date (formatted) so it is never undefined
+      const issueBaseDate = eventEndDate || eventStartDate || new Date().toISOString();
+      const issueDateObj = new Date(issueBaseDate);
+      const issueDate = isNaN(issueDateObj.getTime())
+        ? String(issueBaseDate)
+        : issueDateObj.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
       
       // Create certificate data using template
       const certificateData = {
@@ -583,6 +594,7 @@ export default function Profile() {
         eventName: certificate.title || certificate.event,
         eventDate: eventStartDate, // ISO format untuk di-parse
         eventEndDate: eventEndDate, // ISO format untuk calculate issue date
+        issueDate,
         certificateNumber: certNumber,
         category: certificate.category || 'peserta'
       };
