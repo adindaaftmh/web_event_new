@@ -30,7 +30,6 @@ import ListEvents from './pages/admin/ListEvents.jsx';
 import EventRecap from './pages/admin/EventRecap.jsx';
 import ListParticipants from './pages/admin/ListParticipants.jsx';
 import AttendanceList from './pages/admin/AttendanceList.jsx';
-import IssuedCertificates from './pages/admin/IssuedCertificates.jsx';
 import ListAccounts from './pages/admin/ListAccounts.jsx';
 import UpdateFlyer from './pages/admin/UpdateFlyer.jsx';
 import UpdateRecommendedEvents from './pages/admin/UpdateRecommendedEventsNew.jsx';
@@ -80,9 +79,6 @@ export default function App() {
             {/* Participant Management Submenu */}
             <Route path="/admin/participants/list" element={<ListParticipants />} />
             <Route path="/admin/participants/attendance" element={<AttendanceList />} />
-
-            {/* Certificate Management */}
-            <Route path="/admin/certificates/issued" element={<IssuedCertificates />} />
 
             {/* Account Management Submenu */}
             <Route path="/admin/accounts/list" element={<ListAccounts />} />

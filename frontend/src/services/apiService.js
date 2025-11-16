@@ -65,11 +65,14 @@ export const kegiatanService = {
       const formData = new FormData();
 
       // Handle file upload
-      if (data.flyer_kegiatan && data.flyer_kegiatan instanceof File) {
+      if (data.flyer_kegiatan instanceof File) {
         formData.append('flyer_kegiatan', data.flyer_kegiatan);
         console.log('File appended:', data.flyer_kegiatan.name);
+      } else if (typeof data.flyer_kegiatan === 'string' && data.flyer_kegiatan.trim() !== '') {
+        formData.append('flyer_kegiatan', data.flyer_kegiatan);
+        console.log('Cloudinary URL appended:', data.flyer_kegiatan);
       } else {
-        console.log('No file or invalid file:', data.flyer_kegiatan);
+        console.log('No flyer_kegiatan provided:', data.flyer_kegiatan);
       }
 
       // Add other fields
