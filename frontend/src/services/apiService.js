@@ -114,9 +114,13 @@ export const kegiatanService = {
   update: async (id, data) => {
     const formData = new FormData();
 
-    // Handle file upload
-    if (data.flyer_kegiatan && data.flyer_kegiatan instanceof File) {
-      formData.append('flyer_kegiatan', data.flyer_kegiatan);
+    // Handle flyer_kegiatan: support both File and URL string
+    if (data.flyer_kegiatan) {
+      if (data.flyer_kegiatan instanceof File) {
+        formData.append('flyer_kegiatan', data.flyer_kegiatan);
+      } else if (typeof data.flyer_kegiatan === 'string' && data.flyer_kegiatan.trim() !== '') {
+        formData.append('flyer_kegiatan', data.flyer_kegiatan);
+      }
     }
 
     // Add other fields

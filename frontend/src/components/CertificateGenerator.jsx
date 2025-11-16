@@ -38,7 +38,7 @@ export const generateModernCertificate = async (certificateData) => {
     if (category) {
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(12);
-      const categoryText = `Sebagai Peserta Kategori${category}`;
+      const categoryText = `Sebagai Peserta Kategori ${category}`;
       pdf.text(categoryText, pageWidth / 2, 132, { align: 'center' });
     }
 
@@ -53,7 +53,7 @@ export const generateModernCertificate = async (certificateData) => {
 
     // Issue date near "Tanggal Terbit" area (bottom-right)
     pdf.setFontSize(10);
-    pdf.text(issueDate, pageWidth - 70, pageHeight - 42, { align: 'center' });
+    pdf.text(issueDate, pageWidth - 80, pageHeight - 45, { align: 'center' });
 
     // Certificate number at bottom center
     pdf.setFontSize(8);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { useEvents } from "../../contexts/EventContext";
 import { kategoriKegiatanService } from "../../services/apiService";
+import { useCloudinaryUpload } from "../../hooks/useCloudinaryUpload";
 
 export default function ListEvents() {
   const { events, updateEvent, deleteEvent } = useEvents();
@@ -16,6 +17,7 @@ export default function ListEvents() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [newFlyerPreview, setNewFlyerPreview] = useState(null);
   const [previewFlyer, setPreviewFlyer] = useState(null);
+  const { uploadImage } = useCloudinaryUpload();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -122,20 +124,42 @@ export default function ListEvents() {
     setShowEditModal(true);
   };
 
-  const handleFlyerChange = (file) => {
+  const handleFlyerChange = async (file) => {
     if (newFlyerPreview) {
       URL.revokeObjectURL(newFlyerPreview);
       setNewFlyerPreview(null);
     }
 
-    setEditFormData((prev) => ({
-      ...prev,
-      newFlyer: file || null,
-    }));
+    if (!file) {
+      setEditFormData((prev) => ({
+        ...prev,
+        newFlyer: null,
+        newFlyerUrl: null,
+      }));
+      return;
+    }
 
-    if (file) {
-      const previewUrl = URL.createObjectURL(file);
-      setNewFlyerPreview(previewUrl);
+    const localPreview = URL.createObjectURL(file);
+    setNewFlyerPreview(localPreview);
+
+    try {
+      const result = await uploadImage(file, {
+        folder: "events/flyers",
+      });
+
+      setEditFormData((prev) => ({
+        ...prev,
+        newFlyer: file,
+        newFlyerUrl: result.url,
+      }));
+    } catch (error) {
+      console.error("Cloudinary Upload Error:", error);
+      setEditFormData((prev) => ({
+        ...prev,
+        newFlyer: null,
+        newFlyerUrl: null,
+      }));
+      alert(error?.message || "Gagal upload ke Cloudinary. Silakan coba lagi.");
     }
   };
 
@@ -174,8 +198,8 @@ export default function ListEvents() {
         tickets: editFormData.tickets?.length ? editFormData.tickets : [],
       };
 
-      if (editFormData.newFlyer instanceof File) {
-        payload.flyer_kegiatan = editFormData.newFlyer;
+      if (editFormData.newFlyerUrl) {
+        payload.flyer_kegiatan = editFormData.newFlyerUrl;
       }
 
       await updateEvent(editingEvent.id, payload);
