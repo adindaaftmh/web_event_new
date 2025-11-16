@@ -247,6 +247,61 @@ class DaftarHadirController extends Controller
     }
 
     /**
+     * Issue certificate for an attendance record
+     */
+    public function issueCertificate(Request $request, string $id)
+    {
+        $daftarHadir = DaftarHadir::find($id);
+
+        if (!$daftarHadir) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kehadiran tidak ditemukan'
+            ], 404);
+        }
+
+        $request->validate([
+            'nomor_sertifikat' => 'required|string|max:100',
+            'tanggal_terbit_sertifikat' => 'nullable|date',
+        ]);
+
+        $daftarHadir->nomor_sertifikat = $request->nomor_sertifikat;
+        $daftarHadir->tanggal_terbit_sertifikat = $request->tanggal_terbit_sertifikat ?? now();
+        $daftarHadir->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sertifikat berhasil diterbitkan',
+            'data' => $daftarHadir->load(['user', 'kegiatan'])
+        ]);
+    }
+
+    /**
+     * Revoke certificate for an attendance record
+     */
+    public function revokeCertificate(string $id)
+    {
+        $daftarHadir = DaftarHadir::find($id);
+
+        if (!$daftarHadir) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kehadiran tidak ditemukan'
+            ], 404);
+        }
+
+        $daftarHadir->nomor_sertifikat = null;
+        $daftarHadir->tanggal_terbit_sertifikat = null;
+        $daftarHadir->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sertifikat berhasil dicabut',
+            'data' => $daftarHadir->load(['user', 'kegiatan'])
+        ]);
+    }
+
+    /**
      * Get attendance by activity
      */
     public function getByKegiatan(string $kegiatan_id)

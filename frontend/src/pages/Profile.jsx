@@ -604,11 +604,24 @@ export default function Profile() {
       // Use the certificate generator
       const result = await downloadCertificate(certificateData);
 
-      if (result.success) {
-        alert(`✅ Sertifikat Berhasil Diunduh!\n\n📄 Nomor Sertifikat: ${certNumber}\n🎨 Desain: Template Dynotix\n📁 File: ${result.fileName}\n\nTerima kasih telah menggunakan platform Dynotix!`);
-      } else {
+      if (!result.success) {
         throw new Error(result.error || 'Gagal membuat sertifikat');
       }
+
+      // Try to persist certificate info to daftar_hadir so admin can see it
+      try {
+        if (certificate.id) {
+          await daftarHadirService.issueCertificate(certificate.id, {
+            nomor_sertifikat: certNumber,
+            tanggal_terbit_sertifikat: new Date().toISOString(),
+          });
+        }
+      } catch (persistError) {
+        console.error('Failed to persist certificate info:', persistError);
+        // Jangan blokir user hanya karena gagal simpan status admin
+      }
+
+      alert(`✅ Sertifikat Berhasil Diunduh!\n\n📄 Nomor Sertifikat: ${certNumber}\n🎨 Desain: Template Dynotix\n📁 File: ${result.fileName}\n\nTerima kasih telah menggunakan platform Dynotix!`);
       
     } catch (error) {
       console.error('Error generating certificate:', error);

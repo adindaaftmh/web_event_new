@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../config/api";
+import Toast from "../components/Toast";
 import oceanBg from "../assets/ocean.jpg";
 
 export default function Login() {
@@ -9,6 +10,8 @@ export default function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   
   const [formData, setFormData] = useState({
     email: "",
@@ -42,8 +45,11 @@ export default function Login() {
           localStorage.setItem("rememberMe", "true");
         }
         
-        alert("Login berhasil!");
-        navigate("/");
+        setSuccessMessage("Login berhasil! Selamat datang kembali.");
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 1200);
       }
     } catch (err) {
       console.error('Login error:', err.response?.data);
@@ -55,6 +61,14 @@ export default function Login() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
+      {showSuccessToast && (
+        <Toast
+          message={successMessage}
+          type="success"
+          onClose={() => setShowSuccessToast(false)}
+          duration={4000}
+        />
+      )}
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"

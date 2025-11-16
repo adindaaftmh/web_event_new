@@ -168,6 +168,12 @@ export const daftarHadirService = {
   // Absen
   absen: (data) => apiClient.post('/daftar-hadir/absen', data),
 
+  // Issue certificate for a specific attendance record
+  issueCertificate: (id, data) => apiClient.patch(`/daftar-hadir/${id}/issue-certificate`, data),
+
+  // Revoke certificate for a specific attendance record
+  revokeCertificate: (id) => apiClient.patch(`/daftar-hadir/${id}/revoke-certificate`),
+
   // Export data peserta
   export: (kegiatanId) => apiClient.get(`/daftar-hadir-export/${kegiatanId}`, {
     responseType: 'blob' // For file download

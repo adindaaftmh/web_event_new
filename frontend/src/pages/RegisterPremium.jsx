@@ -1,6 +1,7 @@
   import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../config/api";
+import Toast from "../components/Toast";
 import oceanBg from "../assets/ocean.jpg"; 
 
 export default function Register() {
@@ -12,6 +13,8 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ title: '', message: '' });
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   
   const [formData, setFormData] = useState({
     nama_lengkap: "",
@@ -175,8 +178,11 @@ export default function Register() {
       if (response.data.success) {
         localStorage.setItem("token", response.data.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.data.user));
-        alert("Registrasi berhasil!");
-        navigate("/");
+        setSuccessMessage("Registrasi berhasil! Selamat datang di Event Premium.");
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 1200);
       }
     } catch (err) {
       console.error('Verification error:', err.response?.data);
@@ -217,6 +223,14 @@ export default function Register() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
+      {showSuccessToast && (
+        <Toast
+          message={successMessage}
+          type="success"
+          onClose={() => setShowSuccessToast(false)}
+          duration={4000}
+        />
+      )}
       {/* Error Modal Popup */}
       {showErrorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

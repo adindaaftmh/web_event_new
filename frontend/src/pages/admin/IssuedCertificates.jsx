@@ -73,22 +73,39 @@ export default function IssuedCertificates() {
     }
   };
 
-  const handleIssueCertificate = (certificateId) => {
+  const handleIssueCertificate = async (certificateId) => {
     const nomorSertifikat = `CERT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
-    setCertificates(prev => prev.map(cert => 
-      cert.id === certificateId 
-        ? { ...cert, status: 'diterbitkan', nomorSertifikat, tanggalTerbit: new Date().toISOString() }
-        : cert
-    ));
+    try {
+      await daftarHadirService.issueCertificate(certificateId, {
+        nomor_sertifikat: nomorSertifikat,
+        tanggal_terbit_sertifikat: new Date().toISOString(),
+      });
+
+      setCertificates(prev => prev.map(cert => 
+        cert.id === certificateId 
+          ? { ...cert, status: 'diterbitkan', nomorSertifikat, tanggalTerbit: new Date().toISOString() }
+          : cert
+      ));
+    } catch (error) {
+      console.error('Error issuing certificate:', error);
+      alert('Gagal menerbitkan sertifikat. Silakan coba lagi.');
+    }
   };
 
-  const handleRevokeCertificate = (certificateId) => {
-    if (window.confirm('Apakah Anda yakin ingin mencabut sertifikat ini?')) {
+  const handleRevokeCertificate = async (certificateId) => {
+    if (!window.confirm('Apakah Anda yakin ingin mencabut sertifikat ini?')) return;
+
+    try {
+      await daftarHadirService.revokeCertificate(certificateId);
+
       setCertificates(prev => prev.map(cert => 
         cert.id === certificateId 
           ? { ...cert, status: 'belum_diterbitkan', nomorSertifikat: null, tanggalTerbit: null }
           : cert
       ));
+    } catch (error) {
+      console.error('Error revoking certificate:', error);
+      alert('Gagal mencabut sertifikat. Silakan coba lagi.');
     }
   };
 

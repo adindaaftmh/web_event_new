@@ -29,11 +29,14 @@ class DaftarHadir extends Model
         'otp',
         'status_kehadiran',
         'waktu_absen',
+        'nomor_sertifikat',
+        'tanggal_terbit_sertifikat',
     ];
 
     protected $casts = [
         'waktu_absen' => 'datetime',
         'total_harga' => 'decimal:2',
+        'tanggal_terbit_sertifikat' => 'datetime',
     ];
 
     /**

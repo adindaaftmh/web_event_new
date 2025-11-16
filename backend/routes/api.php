@@ -52,6 +52,8 @@
         // Daftar Hadir Routes
         Route::apiResource('daftar-hadir', DaftarHadirController::class);
         Route::post('daftar-hadir/absen', [DaftarHadirController::class, 'absen']);
+        Route::patch('daftar-hadir/{id}/issue-certificate', [DaftarHadirController::class, 'issueCertificate']);
+        Route::patch('daftar-hadir/{id}/revoke-certificate', [DaftarHadirController::class, 'revokeCertificate']);
 
         // Additional routes for specific functionality
         Route::get('kegiatan-by-kategori/{kategori_id}', [KegiatanController::class, 'getByKategori']);
