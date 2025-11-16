@@ -151,19 +151,19 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   setIsSubmitting(true);
 
-     try {
+    try {
     console.log("Form Data:", formData);
       // Validate form
-      if (
+       if (
       !formData.judul_kegiatan ||
       !formData.penyelenggara ||
       !formData.lokasi_kegiatan ||
       !formData.waktu_mulai
-       ) {
+    ) {
       alert("Mohon lengkapi semua field wajib (Judul, Penyelenggara, Lokasi, Waktu Mulai)");
       setIsSubmitting(false);
       return;
-         }
+    }
 
       // Validasi H-3: Event harus dibuat minimal 3 hari sebelum tanggal pelaksanaan
        const eventDate = new Date(formData.waktu_mulai);
@@ -186,16 +186,17 @@ const handleSubmit = async (e) => {
       alert("Mohon upload flyer kegiatan terlebih dahulu");
       setIsSubmitting(false);
       return;
-        }
+    }
+
 
       if (typeof formData.flyer_kegiatan !== "string") {
       alert("URL flyer tidak valid. Silakan upload ulang.");
       setIsSubmitting(false);
       return;
-        }
+    }
 
        // VALIDASI KATEGORI
-       if (!formData.kategori?.nama_kategori) {
+         if (!formData.kategori?.nama_kategori) {
       alert("Mohon pilih kategori kegiatan");
       setIsSubmitting(false);
       return;
@@ -203,84 +204,88 @@ const handleSubmit = async (e) => {
 
       // Prepare data for API
       const submitData = {
-        kategori: formData.kategori.nama_kategori,
-        judul_kegiatan: formData.judul_kegiatan,
-        penyelenggara: formData.penyelenggara,
-        lokasi_kegiatan: formData.lokasi_kegiatan,
-        waktu_mulai: formData.waktu_mulai,
-        waktu_selesai: formData.waktu_selesai || null,
-        flyer_kegiatan: formData.flyer_kegiatan,  // URL Cloudinary langsung
-        deskripsi_kegiatan: formData.deskripsi_kegiatan || '',
-        kapasitas_peserta: formData.unlimitedParticipants ? null : (formData.kapasitas_peserta || null),
-        harga_tiket: formData.isFree ? 0 : (formData.harga_tiket || 0),
-        kontak_panitia: formData.kontak_panitia || null,
-        tipe_peserta: formData.tipe_peserta,
-        tickets: formData.tickets
-      };
+      kategori: formData.kategori.nama_kategori,
+      judul_kegiatan: formData.judul_kegiatan,
+      penyelenggara: formData.penyelenggara,
+      lokasi_kegiatan: formData.lokasi_kegiatan,
+      waktu_mulai: formData.waktu_mulai,
+      waktu_selesai: formData.waktu_selesai || null,
+      flyer_kegiatan: formData.flyer_kegiatan,
+      deskripsi_kegiatan: formData.deskripsi_kegiatan || "",
+      kapasitas_peserta: formData.unlimitedParticipants ? null: (formData.kapasitas_peserta || null),
+      harga_tiket: formData.isFree? 0 : (formData.harga_tiket || 0),
+      kontak_panitia: formData.kontak_panitia || null,
+      tipe_peserta: formData.tipe_peserta,
+      tickets: formData.tickets,
+    };
 
-      console.log('Submit Data:', submitData);
+       console.log("Submit Data:", submitData);
 
       // Add event via API
       await addEvent(submitData);
 
       // Reset form
       setFormData({
-        judul_kegiatan: "",
-        penyelenggara: "",
-        lokasi_kegiatan: "",
-        waktu_mulai: "",
-        waktu_selesai: "",
-        flyer_kegiatan: null,
-        deskripsi_kegiatan: "",
-        kategori: { nama_kategori: "" },
-        kapasitas_peserta: "",
-        harga_tiket: "",
-        kontak_panitia: "",
-        isFree: true,
-        unlimitedParticipants: true,
-        tipe_peserta: "individu",
-        tickets: []
-      });
+      judul_kegiatan: "",
+      penyelenggara: "",
+      lokasi_kegiatan: "",
+      waktu_mulai: "",
+      waktu_selesai: "",
+      flyer_kegiatan: null,
+      deskripsi_kegiatan: "",
+      kategori: { nama_kategori: "" },
+      kapasitas_peserta: "",
+      harga_tiket: "",
+      kontak_panitia: "",
+      isFree: true,
+      unlimitedParticipants: true,
+      tipe_peserta: "individu",
+      tickets: [],
+    });
+
       setPreviewImage(null);
       setSelectedFile(null);
 
-      // Show success message
-      setErrorMessage("Event berhasil ditambahkan!");
-      setShowErrorPopup(true);
-      
+     // Success Popup
+    setErrorMessage("Event berhasil ditambahkan!");
+    setShowErrorPopup(true);
+
       // Auto close after 2 seconds and reload
       setTimeout(() => {
         setShowErrorPopup(false);
         window.location.reload();
-      }, 2000);
-    } catch (error) {
-      console.error("Error adding event:", error);
-      const errorMsg = error.response?.data?.message || error.message || "Gagal menambahkan event. Silakan coba lagi.";
-      setErrorMessage(errorMsg);
-      setShowErrorPopup(true);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+       }, 2000);
 
-  const handleInputChange = (field, value) => {
-    if (field === 'kategori') {
-      setFormData(prev => ({
-        ...prev,
-        kategori: { nama_kategori: value }
-      }));
-    } else if (field === 'flyer_kegiatan') {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    }
-  };
+
+    } catch (error) {
+    console.error("Error adding event:", error);
+    const msg =
+      error.response?.data?.message ||
+      error.message ||
+      "Gagal menambahkan event. Silakan coba lagi."
+
+      setErrorMessage(msg);
+    setShowErrorPopup(true);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+  
+  // HANDLE INPUT CHANGE
+ const handleInputChange = (field, value) => {
+  if (field === "kategori") {
+    setFormData((prev) => ({
+      ...prev,
+      kategori: { nama_kategori: value },
+    }));
+    return;
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    [field]: value,
+  }));
+};
 
   const handleAddTicket = () => {
     if (!ticketForm.nama_tiket || !ticketForm.harga || !ticketForm.kuota) {
