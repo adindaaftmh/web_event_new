@@ -6,6 +6,7 @@ use App\Models\Flyer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class FlyerController extends Controller
 {
@@ -309,4 +310,76 @@ class FlyerController extends Controller
             'message' => 'Urutan flyer berhasil diupdate'
         ]);
     }
+
+    /**
+     * Maintenance: migrate local flyer images to Cloudinary URLs.
+     *
+     * NOTE: panggil sekali saja (misalnya dari route /artisan khusus admin),
+     * setelah itu sebaiknya dinonaktifkan.
+     */
+    public function migrateLocalImagesToCloudinary()
+    {
+        $flyers = Flyer::whereNotNull('image_path')->get();
+
+        $migrated = 0;
+        $skipped = 0;
+        $errors = [];
+
+        foreach ($flyers as $flyer) {
+            // Jika sudah URL (Cloudinary / lainnya), skip
+            if (filter_var($flyer->image_path, FILTER_VALIDATE_URL)) {
+                $skipped++;
+                continue;
+            }
+
+            $localPath = storage_path('app/public/' . ltrim($flyer->image_path, '/'));
+
+            if (!file_exists($localPath)) {
+                $errors[] = [
+                    'id' => $flyer->id,
+                    'image_path' => $flyer->image_path,
+                    'reason' => 'file_not_found',
+                ];
+                continue;
+            }
+
+            try {
+                $uploaded = Cloudinary::upload($localPath, [
+                    'folder' => 'homepage/flyers',
+                ]);
+
+                $secureUrl = $uploaded->getSecurePath();
+
+                // Update image_path menjadi URL Cloudinary
+                $flyer->image_path = $secureUrl;
+                $flyer->save();
+
+                // Optional: hapus file lokal setelah sukses
+                try {
+                    if (Storage::disk('public')->exists($flyer->image_path)) {
+                        Storage::disk('public')->delete($flyer->image_path);
+                    }
+                } catch (\Exception $e) {
+                    // jika gagal hapus file lokal, tidak fatal
+                }
+
+                $migrated++;
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'id' => $flyer->id,
+                    'image_path' => $flyer->image_path,
+                    'reason' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Migrasi selesai',
+            'migrated' => $migrated,
+            'skipped' => $skipped,
+            'errors' => $errors,
+        ]);
+    }
 }
+

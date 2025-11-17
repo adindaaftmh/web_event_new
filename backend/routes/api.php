@@ -85,7 +85,10 @@
             Route::apiResource('flyers', FlyerController::class);
             Route::patch('flyers/{flyer}/toggle-active', [FlyerController::class, 'toggleActive']);
             Route::post('flyers/update-order', [FlyerController::class, 'updateOrder']);
-        });
+
+            // SEMENTARA: migrasi gambar lokal ke Cloudinary
+         Route::post('flyers/migrate-images', [FlyerController::class, 'migrateLocalImagesToCloudinary']);
+            });
 
         // Recommended Event Routes (Public - active events only)
         Route::get('recommended-events/active', [RecommendedEventController::class, 'activeEvents']);
