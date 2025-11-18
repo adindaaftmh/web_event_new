@@ -339,7 +339,8 @@ class AuthController extends Controller
             'no_handphone' => 'sometimes|string|max:20|min:10',
             'alamat' => 'sometimes|string|max:500',
             'pendidikan_terakhir' => 'sometimes|string|in:SD/MI,SMP/MTS,SMA/SMK,Diploma/Sarjana,Lainnya',
-            'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
+            'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'profile_image_url' => 'sometimes|url|max:1000'
         ]);
 
         if ($validator->fails()) {
@@ -386,7 +387,22 @@ class AuthController extends Controller
 
             // Handle profile image upload
             $profileImageUrl = null;
-            if ($request->hasFile('profile_image')) {
+            
+            // Prioritas: Jika ada URL Cloudinary, gunakan itu
+            if ($request->filled('profile_image_url')) {
+                $profileImageUrl = $request->input('profile_image_url');
+                
+                // Delete old profile image jika bukan URL (file lokal)
+                if ($user->profile_image && !filter_var($user->profile_image, FILTER_VALIDATE_URL)) {
+                    $oldImagePath = public_path($user->profile_image);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                }
+                
+                $user->profile_image = $profileImageUrl;
+            } elseif ($request->hasFile('profile_image')) {
+                // Jika hanya file yang dikirim, simpan ke storage lokal
                 $image = $request->file('profile_image');
                 $imageName = time() . '_' . $user->id . '.' . $image->getClientOriginalExtension();
                 

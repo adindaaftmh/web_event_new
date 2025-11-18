@@ -8,9 +8,11 @@ import { userService, daftarHadirService } from "../services/apiService";
 import oceanBg from "../assets/ocean.jpg";
 import { downloadCertificate } from "../components/CertificateGenerator";
 import { getStorageUrl } from '../config/api';
+import { useCloudinaryUpload } from '../hooks/useCloudinaryUpload';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { uploadImage } = useCloudinaryUpload();
   const [user, setUser] = useState(null);
   const [activities, setActivities] = useState([]);
   const [certificates, setCertificates] = useState([]);
@@ -24,6 +26,7 @@ export default function Profile() {
   const [deleteAccountConfirmText, setDeleteAccountConfirmText] = useState('');
   const [profileImage, setProfileImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [ticketToRender, setTicketToRender] = useState(null);
   const [captureTicket, setCaptureTicket] = useState(false);
   const ticketRef = useRef(null);
@@ -381,70 +384,44 @@ export default function Profile() {
         return;
       }
 
-      // Create FormData for file upload
-      const formData = new FormData();
+      // Create data object (tidak perlu FormData kalau hanya URL Cloudinary)
+      const dataToSend = {};
       
       // Only append fields that have values and are allowed to be updated
       if (editForm.nama_lengkap && editForm.nama_lengkap.trim() !== '') {
-        formData.append('nama_lengkap', editForm.nama_lengkap.trim());
+        dataToSend.nama_lengkap = editForm.nama_lengkap.trim();
         console.log(`Added nama_lengkap: ${editForm.nama_lengkap}`);
       }
       
       if (editForm.no_handphone && editForm.no_handphone.trim() !== '') {
-        formData.append('no_handphone', editForm.no_handphone.trim());
+        dataToSend.no_handphone = editForm.no_handphone.trim();
         console.log(`Added no_handphone: ${editForm.no_handphone}`);
       }
       
       if (editForm.alamat && editForm.alamat.trim() !== '') {
-        formData.append('alamat', editForm.alamat.trim());
+        dataToSend.alamat = editForm.alamat.trim();
         console.log(`Added alamat: ${editForm.alamat}`);
       }
       
       if (editForm.pendidikan_terakhir && editForm.pendidikan_terakhir !== '') {
-        formData.append('pendidikan_terakhir', editForm.pendidikan_terakhir);
+        dataToSend.pendidikan_terakhir = editForm.pendidikan_terakhir;
         console.log(`Added pendidikan_terakhir: ${editForm.pendidikan_terakhir}`);
       }
       
+      // Jika ada URL Cloudinary, kirim sebagai profile_image_url (bukan file)
       if (profileImage) {
-        formData.append('profile_image', profileImage);
-        console.log("Added profile image to FormData");
+        dataToSend.profile_image_url = profileImage;
+        console.log("Added profile image URL from Cloudinary:", profileImage);
       }
 
-      // Log FormData contents
-      console.log("FormData contents:");
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
+      // Log data contents
+      console.log("Data to send:", dataToSend);
 
       // Send updated data to backend
       console.log("Sending request to backend...");
-      console.log("FormData type check:", formData instanceof FormData);
       
-      let response;
-      // Debug: Test with simple object first
-      if (!profileImage) {
-        console.log("No image, sending as regular object...");
-        const simpleData = {};
-        if (editForm.nama_lengkap && editForm.nama_lengkap.trim() !== '') {
-          simpleData.nama_lengkap = editForm.nama_lengkap.trim();
-        }
-        if (editForm.no_handphone && editForm.no_handphone.trim() !== '') {
-          simpleData.no_handphone = editForm.no_handphone.trim();
-        }
-        if (editForm.alamat && editForm.alamat.trim() !== '') {
-          simpleData.alamat = editForm.alamat.trim();
-        }
-        if (editForm.pendidikan_terakhir && editForm.pendidikan_terakhir !== '') {
-          simpleData.pendidikan_terakhir = editForm.pendidikan_terakhir;
-        }
-        console.log("Sending simple data:", simpleData);
-        response = await userService.updateProfile(simpleData);
-        console.log("Backend response:", response);
-      } else {
-        console.log("Has image, sending as FormData...");
-        response = await userService.updateProfile(formData);
-        console.log("Backend response:", response);
-      }
+      const response = await userService.updateProfile(dataToSend);
+      console.log("Backend response:", response);
 
       if (response.data && response.data.success) {
         // Update local state and localStorage
@@ -501,15 +478,44 @@ export default function Profile() {
     }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfileImage(file);
+      // Validasi file
+      if (!file.type.startsWith('image/')) {
+        alert('File harus berupa gambar');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Ukuran file maksimal 5MB');
+        return;
+      }
+
+      // Buat preview lokal
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result);
       };
       reader.readAsDataURL(file);
+
+      // Upload ke Cloudinary
+      setUploadingImage(true);
+      try {
+        const result = await uploadImage(file, {
+          folder: "user_profiles",
+        });
+        
+        // Simpan URL Cloudinary ke state
+        setProfileImage(result.url);
+        console.log('Profile image uploaded to Cloudinary:', result.url);
+      } catch (error) {
+        console.error('Cloudinary upload error:', error);
+        alert('Gagal upload gambar ke Cloudinary: ' + error.message);
+        setPreviewImage(null);
+        setProfileImage(null);
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
