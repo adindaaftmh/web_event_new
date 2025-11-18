@@ -85,10 +85,9 @@ class KegiatanController extends Controller
 
          $flyerPath = null;
         if ($request->flyer_kegiatan) {
-            // Cek apakah ini URL Cloudinary (mengandung cloudinary.com)
-            if (filter_var($request->flyer_kegiatan, FILTER_VALIDATE_URL) && 
-                str_contains($request->flyer_kegiatan, 'cloudinary.com')) {
-                // Langsung simpan URL Cloudinary
+            // Cek apakah ini valid URL (bisa Cloudinary atau URL lain)
+            if (filter_var($request->flyer_kegiatan, FILTER_VALIDATE_URL)) {
+                // Langsung simpan URL (Cloudinary atau URL lain)
                 $flyerPath = $request->flyer_kegiatan;
             } elseif ($request->hasFile('flyer_kegiatan')) {
                 // Fallback: Upload file seperti biasa (jika masih ada yang upload file)
@@ -194,21 +193,22 @@ class KegiatanController extends Controller
         
         if ($request->flyer_kegiatan) {
             // Cek apakah ini URL Cloudinary
-            if (filter_var($request->flyer_kegiatan, FILTER_VALIDATE_URL) && 
-                str_contains($request->flyer_kegiatan, 'cloudinary.com')) {
+            if (filter_var($request->flyer_kegiatan, FILTER_VALIDATE_URL)) {
+                // Valid URL (bisa Cloudinary atau URL lain)
                 
-                // Jika flyer lama bukan URL Cloudinary, hapus file lokal
-                if ($flyerPath && !str_contains($flyerPath, 'cloudinary.com') && 
+                // Jika flyer lama bukan URL (path lokal), hapus file lokal
+                if ($flyerPath && !filter_var($flyerPath, FILTER_VALIDATE_URL) && 
                     Storage::disk('public')->exists($flyerPath)) {
                     Storage::disk('public')->delete($flyerPath);
                 }
                 
-                // Simpan URL Cloudinary baru
+                // Simpan URL baru (Cloudinary atau URL lain)
                 $flyerPath = $request->flyer_kegiatan;
                 
             } elseif ($request->hasFile('flyer_kegiatan')) {
                 // Upload file baru
-                if ($flyerPath && !str_contains($flyerPath, 'cloudinary.com') && 
+                // Jika flyer lama bukan URL (path lokal), hapus file lokal
+                if ($flyerPath && !filter_var($flyerPath, FILTER_VALIDATE_URL) && 
                     Storage::disk('public')->exists($flyerPath)) {
                     Storage::disk('public')->delete($flyerPath);
                 }
@@ -258,9 +258,9 @@ class KegiatanController extends Controller
             ], 404);
         }
 
-         // Delete flyer file HANYA jika bukan URL Cloudinary
+         // Delete flyer file HANYA jika bukan URL (path lokal)
         if ($kegiatan->flyer_kegiatan && 
-            !str_contains($kegiatan->flyer_kegiatan, 'cloudinary.com') &&
+            !filter_var($kegiatan->flyer_kegiatan, FILTER_VALIDATE_URL) &&
             Storage::disk('public')->exists($kegiatan->flyer_kegiatan)) {
             Storage::disk('public')->delete($kegiatan->flyer_kegiatan);
         }

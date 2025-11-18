@@ -12,6 +12,24 @@ body {
   overflow-x: hidden;
 }
 
+/* Responsive improvements */
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent horizontal scroll on mobile */
+@media (max-width: 640px) {
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+}
+
 /* Main Content Animation */
 #root > * {
   animation: pageSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);

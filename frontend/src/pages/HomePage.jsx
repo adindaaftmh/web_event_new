@@ -17,7 +17,7 @@ import hiburanImg from "../assets/hiburan.jpg";
 import axios from 'axios';
 import { BookOpen, Smile, Palette, Lightbulb, Heart, Edit } from 'lucide-react';
 import { testimonialService } from '../services/apiService';
-import apiClient from '../config/api';
+import apiClient, { getStorageUrl } from '../config/api';
 
 const API_URL = "https://dynotix-production.up.railway.app/api";
 
@@ -669,7 +669,7 @@ export default function HomePage() {
       {/* Hero Section with Ocean Background - Enlarged */}
       <div 
         id="hero-section"
-        className="relative h-[70vh] bg-cover bg-center bg-no-repeat"
+        className="relative h-[60vh] sm:h-[70vh] bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${oceanBg})` }}
       >
         {/* Dark overlay for better text readability */}
@@ -685,10 +685,10 @@ export default function HomePage() {
                     index === currentSlide ? "opacity-100" : "opacity-0 absolute"
                   }`}
                 >
-                  <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-2xl px-4">
                     {slide.title}
                   </h2>
-                  <p className="text-xl text-white/90 drop-shadow-lg">
+                  <p className="text-lg sm:text-xl text-white/90 drop-shadow-lg px-4">
                     {slide.description}
                   </p>
                 </div>
@@ -800,7 +800,7 @@ export default function HomePage() {
         }}></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#F6FAFD] to-[#B3CFE5] border-2 border-[#4A7FA7]/30 rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="w-6 h-6 text-[#0A1931]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -808,9 +808,9 @@ export default function HomePage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-[#0A1931] inline-block">Event Terbaru</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#0A1931] inline-block">Event Terbaru</h2>
                 {/* Animated Underline */}
-                <div className="h-1 w-32 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] rounded-full mt-1 animate-slide-line"></div>
+                <div className="h-1 w-24 sm:w-32 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] rounded-full mt-1 animate-slide-line"></div>
               </div>
             </div>
             <button
@@ -826,15 +826,15 @@ export default function HomePage() {
 
           {/* Event Cards Grid */}
           <div className="relative">
-            {/* Navigation Arrow Left */}
-            <button onClick={prevEvents} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
+            {/* Navigation Arrow Left - Hidden on mobile */}
+            <button onClick={prevEvents} className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {loading ? (
                 // Loading skeleton
                 Array.from({ length: 4 }).map((_, index) => (
@@ -868,17 +868,8 @@ export default function HomePage() {
                     {/* Flyer Image Area */}
                     <div className="relative h-56 bg-gradient-to-br from-[#1A3D63] via-[#4A7FA7] to-[#0A1931] flex items-center justify-center overflow-hidden group-hover:from-[#4A7FA7] group-hover:via-[#1A3D63] group-hover:to-[#0A1931] transition-all duration-500">
                       {(() => {
-                        // Handle flyer URL
-                        let flyerSrc = null;
-                        if (event.flyer_url) {
-                          flyerSrc = event.flyer_url;
-                        } else if (event.flyer_kegiatan) {
-                          if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
-                            flyerSrc = event.flyer_kegiatan;
-                          } else {
-                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
-                          }
-                        }
+                        // Gunakan flyer_url dari backend atau fallback ke getStorageUrl
+                        const flyerSrc = event.flyer_url || getStorageUrl(event.flyer_kegiatan);
 
                         return flyerSrc ? (
                           <img
@@ -887,6 +878,7 @@ export default function HomePage() {
                             className="absolute inset-0 w-full h-full object-cover"
                             loading="lazy"
                             onError={(e) => {
+                              e.target.onerror = null;
                               e.target.style.display = 'none';
                               const placeholder = e.target.parentElement.querySelector('.flyer-placeholder');
                               if (placeholder) placeholder.style.display = 'flex';
@@ -1012,8 +1004,8 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Navigation Arrow Right */}
-            <button onClick={nextEvents} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
+            {/* Navigation Arrow Right - Hidden on mobile */}
+            <button onClick={nextEvents} className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -1033,7 +1025,7 @@ export default function HomePage() {
         }}></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#F6FAFD] to-[#B3CFE5] border-2 border-emerald-500/30 rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1041,9 +1033,9 @@ export default function HomePage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-[#0A1931] inline-block">Event Populer</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#0A1931] inline-block">Event Populer</h2>
                 {/* Animated Underline */}
-                <div className="h-1 w-36 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full mt-1 animate-slide-line"></div>
+                <div className="h-1 w-28 sm:w-36 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full mt-1 animate-slide-line"></div>
               </div>
             </div>
             <button
@@ -1059,15 +1051,15 @@ export default function HomePage() {
 
           {/* Popular Event Cards Grid */}
           <div className="relative">
-            {/* Navigation Arrow Left */}
-            <button onClick={prevPopularEvents} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
+            {/* Navigation Arrow Left - Hidden on mobile */}
+            <button onClick={prevPopularEvents} className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {loading ? (
                 // Loading skeleton
                 Array.from({ length: 4 }).map((_, index) => (
@@ -1101,17 +1093,8 @@ export default function HomePage() {
                     {/* Flyer Image Area */}
                     <div className="relative h-56 bg-gradient-to-br from-emerald-600 via-green-500 to-teal-600 flex items-center justify-center overflow-hidden group-hover:from-green-500 group-hover:via-emerald-600 group-hover:to-teal-500 transition-all duration-500">
                       {(() => {
-                        // Handle flyer URL
-                        let flyerSrc = null;
-                        if (event.flyer_url) {
-                          flyerSrc = event.flyer_url;
-                        } else if (event.flyer_kegiatan) {
-                          if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
-                            flyerSrc = event.flyer_kegiatan;
-                          } else {
-                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
-                          }
-                        }
+                        // Gunakan flyer_url dari backend atau fallback ke getStorageUrl
+                        const flyerSrc = event.flyer_url || getStorageUrl(event.flyer_kegiatan);
 
                         return flyerSrc ? (
                           <img
@@ -1120,6 +1103,7 @@ export default function HomePage() {
                             className="absolute inset-0 w-full h-full object-cover"
                             loading="lazy"
                             onError={(e) => {
+                              e.target.onerror = null;
                               e.target.style.display = 'none';
                               const placeholder = e.target.parentElement.querySelector('.flyer-placeholder');
                               if (placeholder) placeholder.style.display = 'flex';
@@ -1245,8 +1229,8 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Navigation Arrow Right */}
-            <button onClick={nextPopularEvents} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
+            {/* Navigation Arrow Right - Hidden on mobile */}
+            <button onClick={nextPopularEvents} className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[#F6FAFD]/90 backdrop-blur-xl rounded-full shadow-lg items-center justify-center text-[#0A1931] hover:bg-[#F6FAFD] transition-all border border-white/20">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

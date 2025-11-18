@@ -42,16 +42,23 @@ class Kegiatan extends Model
      */
      public function getFlyerUrlAttribute()
     {
-        if ($this->flyer_kegiatan) {
-            // Cek apakah ini URL Cloudinary (sudah full URL)
-            if (str_contains($this->flyer_kegiatan, 'cloudinary.com')) {
-                return $this->flyer_kegiatan; // Return URL Cloudinary langsung
-            }
-            
-            // Jika bukan, berarti path lokal storage
-            return url('storage/' . $this->flyer_kegiatan);
+        if (!$this->flyer_kegiatan) {
+            return null;
         }
-        return null;
+        
+        // Cek apakah ini sudah full URL (bisa Cloudinary atau URL lain)
+        if (filter_var($this->flyer_kegiatan, FILTER_VALIDATE_URL)) {
+            return $this->flyer_kegiatan; // Return URL langsung (Cloudinary atau URL lain)
+        }
+        
+        // Jika bukan URL, berarti path lokal storage
+        // Pastikan path tidak dimulai dengan /storage/ (untuk menghindari duplikasi)
+        $cleanPath = ltrim($this->flyer_kegiatan, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            return url($cleanPath);
+        }
+        
+        return url('storage/' . $cleanPath);
     }
 
     /**

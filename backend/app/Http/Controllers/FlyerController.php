@@ -70,12 +70,25 @@ class FlyerController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
-            'image' => 'required|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            // Wajib salah satu: file image atau URL Cloudinary
+            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image_url' => 'nullable|url|max:1000',
             'description' => 'nullable|string',
             'order' => 'nullable|integer|min:1',
             'is_active' => 'nullable|boolean',
             'link_url' => 'nullable|url|max:500'
         ]);
+
+        // Custom validation: pastikan ada image atau image_url
+        if (!$request->filled('image_url') && !$request->hasFile('image')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => [
+                    'image' => ['Harus ada gambar (upload file atau URL Cloudinary)']
+                ]
+            ], 422);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -85,9 +98,28 @@ class FlyerController extends Controller
             ], 422);
         }
 
+        // Tentukan path/URL gambar yang akan disimpan
         $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('flyers', 'public');
+
+        // Jika frontend sudah upload ke Cloudinary dan mengirim image_url,
+        // gunakan URL tersebut sebagai image_path
+        if ($request->filled('image_url')) {
+            $imagePath = $request->input('image_url');
+        } elseif ($request->hasFile('image')) {
+            // Jika hanya file yang dikirim, coba upload ke Cloudinary dari backend
+            try {
+                $uploaded = Cloudinary::upload(
+                    $request->file('image')->getRealPath(),
+                    [
+                        'folder' => 'homepage/flyers',
+                    ]
+                );
+
+                $imagePath = $uploaded->getSecurePath();
+            } catch (\Exception $e) {
+                // Jika upload ke Cloudinary gagal, fallback ke penyimpanan lokal
+                $imagePath = $request->file('image')->store('flyers', 'public');
+            }
         }
 
         $flyer = Flyer::create([
@@ -165,6 +197,7 @@ class FlyerController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image_url' => 'nullable|url|max:1000',
             'description' => 'nullable|string',
             'order' => 'nullable|integer|min:1',
             'is_active' => 'nullable|boolean',
@@ -179,18 +212,39 @@ class FlyerController extends Controller
             ], 422);
         }
 
-        // Update image if new one is uploaded
-        if ($request->hasFile('image')) {
-            // Delete old image
+        // Update image jika ada URL Cloudinary baru atau file baru diupload
+        if ($request->filled('image_url')) {
+            // Jika sebelumnya pakai file lokal, hapus file lamanya
             if ($flyer->image_path && !filter_var($flyer->image_path, FILTER_VALIDATE_URL)) {
                 Storage::disk('public')->delete($flyer->image_path);
             }
-            
-            $imagePath = $request->file('image')->store('flyers', 'public');
-            $flyer->image_path = $imagePath;
+
+            // Simpan URL Cloudinary ke image_path
+            $flyer->image_path = $request->input('image_url');
+        } elseif ($request->hasFile('image')) {
+            // Delete old local image jika bukan URL
+            if ($flyer->image_path && !filter_var($flyer->image_path, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($flyer->image_path);
+            }
+
+            // Coba upload file baru ke Cloudinary dari backend
+            try {
+                $uploaded = Cloudinary::upload(
+                    $request->file('image')->getRealPath(),
+                    [
+                        'folder' => 'homepage/flyers',
+                    ]
+                );
+
+                $flyer->image_path = $uploaded->getSecurePath();
+            } catch (\Exception $e) {
+                // Jika upload Cloudinary gagal, fallback ke penyimpanan lokal
+                $imagePath = $request->file('image')->store('flyers', 'public');
+                $flyer->image_path = $imagePath;
+            }
         }
 
-        // Update other fields
+        // Update field lain
         if ($request->has('title')) {
             $flyer->title = $request->title;
         }

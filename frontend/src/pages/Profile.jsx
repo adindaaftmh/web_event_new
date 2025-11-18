@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import { userService, daftarHadirService } from "../services/apiService";
 import oceanBg from "../assets/ocean.jpg";
 import { downloadCertificate } from "../components/CertificateGenerator";
+import { getStorageUrl } from '../config/api';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -193,7 +194,8 @@ export default function Profile() {
                   token: reg.otp,
                   ticketType: reg.tiket_dipilih || 'free',
                   statusVerifikasi: reg.status_verifikasi,
-                  eventFlyer: reg.kegiatan?.flyer_url || reg.kegiatan?.flyer_kegiatan,
+                  eventFlyer: reg.kegiatan?.flyer_url || getStorageUrl(reg.kegiatan?.flyer_kegiatan),
+                  flyer_kegiatan: reg.kegiatan?.flyer_kegiatan, // Raw path untuk fallback
                   eventDate: reg.kegiatan?.waktu_mulai,
                   eventEndDate: reg.kegiatan?.waktu_selesai || reg.kegiatan?.waktu_mulai, // Add end date
                   category: reg.kegiatan?.kategori?.nama_kategori || 'Kegiatan',
@@ -1066,14 +1068,8 @@ export default function Profile() {
                       <div key={activity.id} className="bg-white backdrop-blur-xl rounded-xl overflow-hidden border-2 border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all transform hover:-translate-y-1">
                         {/* Event Flyer */}
                         {(() => {
-                          let flyerSrc = null;
-                          if (activity.eventFlyer) {
-                            if (activity.eventFlyer.startsWith('http://') || activity.eventFlyer.startsWith('https://')) {
-                              flyerSrc = activity.eventFlyer;
-                            } else {
-                              flyerSrc = `http://localhost:8000/storage/${activity.eventFlyer}`;
-                            }
-                          }
+                          // Gunakan eventFlyer langsung atau fallback ke getStorageUrl
+                          const flyerSrc = activity.eventFlyer || getStorageUrl(activity.flyer_kegiatan);
                           
                           return flyerSrc ? (
                             <div className="relative h-48 overflow-hidden">
@@ -1376,14 +1372,8 @@ export default function Profile() {
                       <div key={registration.id} className="bg-white backdrop-blur-xl rounded-xl overflow-hidden border-2 border-indigo-100 hover:shadow-2xl hover:border-indigo-300 transition-all transform hover:-translate-y-1">
                         {/* Event Flyer */}
                         {(() => {
-                          let flyerSrc = null;
-                          if (registration.eventFlyer) {
-                            if (registration.eventFlyer.startsWith('http://') || registration.eventFlyer.startsWith('https://')) {
-                              flyerSrc = registration.eventFlyer;
-                            } else {
-                              flyerSrc = `http://localhost:8000/storage/${registration.eventFlyer}`;
-                            }
-                          }
+                          // Gunakan eventFlyer langsung atau fallback ke getStorageUrl
+                          const flyerSrc = registration.eventFlyer || getStorageUrl(registration.flyer_kegiatan);
                           
                           return flyerSrc ? (
                             <div className="relative h-48 overflow-hidden">

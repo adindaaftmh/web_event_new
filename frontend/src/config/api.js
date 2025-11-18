@@ -55,5 +55,23 @@ const publicApiClient = axios.create({
   timeout: 30000,
 });
 
+// Helper function untuk mendapatkan storage URL
+export const getStorageUrl = (path) => {
+  if (!path) return null;
+  
+  // Jika sudah full URL, return langsung
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  
+  // Hapus /api dari base URL untuk storage
+  const baseUrl = API_BASE_URL.replace('/api', '');
+  
+  // Pastikan path tidak dimulai dengan /
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  return `${baseUrl}/storage/${cleanPath}`;
+};
+
 export default apiClient;
 export { publicApiClient };

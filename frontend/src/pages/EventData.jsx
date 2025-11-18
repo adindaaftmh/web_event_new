@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { kegiatanService } from "../services/apiService";
-import apiClient from "../config/api";
+import apiClient, { getStorageUrl } from "../config/api";
 import oceanBg from "../assets/ocean.jpg";
 
 export default function EventData() {
@@ -268,19 +268,19 @@ export default function EventData() {
 
         {/* Hero Section with Ocean Background */}
         <div 
-          className="relative h-[50vh] bg-cover bg-center bg-no-repeat pt-24"
+          className="relative h-[40vh] sm:h-[50vh] bg-cover bg-center bg-no-repeat pt-20 sm:pt-24"
           style={{ backgroundImage: `url(${oceanBg})` }}
         >
           {/* Overlay - No Blur */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-900/60 via-indigo-800/50 to-purple-900/60"></div>
           
           {/* Content */}
-          <div className="relative z-10 h-full flex items-center justify-center text-center px-4 pb-16">
+          <div className="relative z-10 h-full flex items-center justify-center text-center px-4 pb-12 sm:pb-16">
             <div className="animate-fade-in">
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 drop-shadow-2xl">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-3 sm:mb-4 drop-shadow-2xl">
                 Semua Event
               </h1>
-              <p className="text-lg md:text-xl text-white/95 max-w-2xl mx-auto drop-shadow-lg mb-6">
+              <p className="text-base sm:text-lg md:text-xl text-white/95 max-w-2xl mx-auto drop-shadow-lg mb-4 sm:mb-6 px-2">
                 Temukan berbagai event menarik yang sesuai dengan minat dan passion Anda
               </p>
               
@@ -317,7 +317,7 @@ export default function EventData() {
               <p className="text-[#4A7FA7] text-xs ml-10">Temukan event yang sesuai dengan preferensi Anda</p>
             </div>
 
-            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Search Bar */}
               <div className="relative group">
                 <label className="block text-xs font-semibold text-[#0A1931] mb-1">Pencarian</label>
@@ -476,19 +476,9 @@ export default function EventData() {
                     {/* Flyer Image Area */}
                     <div className="relative h-56 bg-gradient-to-br from-[#1A3D63] via-[#4A7FA7] to-[#0A1931] flex items-center justify-center overflow-hidden group-hover:from-[#4A7FA7] group-hover:via-[#1A3D63] group-hover:to-[#0A1931] transition-all duration-500">
                       {(() => {
-                        // Handle flyer URL - check multiple possible fields
-                        let flyerSrc = null;
-                        if (event.flyer_url) {
-                          flyerSrc = event.flyer_url;
-                        } else if (event.flyer_kegiatan) {
-                          // Check if it's already a full URL
-                          if (event.flyer_kegiatan.startsWith('http://') || event.flyer_kegiatan.startsWith('https://')) {
-                            flyerSrc = event.flyer_kegiatan;
-                          } else {
-                            // Prepend storage path for relative paths
-                            flyerSrc = `http://localhost:8000/storage/${event.flyer_kegiatan}`;
-                          }
-                        }
+                        // Backend sudah generate flyer_url via accessor
+                        // flyer_url sudah handle: URL Cloudinary langsung atau url('storage/...')
+                        const flyerSrc = event.flyer_url;
 
                         return flyerSrc ? (
                           <img
@@ -497,6 +487,8 @@ export default function EventData() {
                             className="absolute inset-0 w-full h-full object-cover"
                             loading="lazy"
                             onError={(e) => {
+                              // Prevent infinite loop
+                              e.target.onerror = null;
                               // Hide broken image and show placeholder
                               e.target.style.display = 'none';
                               const placeholder = e.target.parentElement.querySelector('.flyer-placeholder');

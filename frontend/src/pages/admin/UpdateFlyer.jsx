@@ -144,7 +144,8 @@ export default function UpdateFlyer() {
       return;
     }
 
-    if (!editingFlyer && !selectedFile) {
+    // Pastikan ada image_url (dari Cloudinary) atau selectedFile (untuk upload backend)
+    if (!editingFlyer && !formData.image_url && !selectedFile) {
       showMessage('error', 'Gambar harus dipilih saat menambah flyer baru');
       return;
     }
@@ -165,10 +166,14 @@ export default function UpdateFlyer() {
       if (formData.link_url) {
         formDataToSend.append('link_url', formData.link_url);
       }
+      
+      // Prioritas: kirim image_url (Cloudinary) jika ada
+      // Jangan kirim file asli kalau sudah ada URL Cloudinary
       if (formData.image_url) {
         formDataToSend.append('image_url', formData.image_url);
-      }
-      if (selectedFile) {
+        console.log('Sending Cloudinary URL:', formData.image_url);
+      } else if (selectedFile) {
+        // Hanya kirim file kalau belum ada URL Cloudinary
         formDataToSend.append('image', selectedFile);
         console.log('Image file attached:', selectedFile.name, selectedFile.size);
       }

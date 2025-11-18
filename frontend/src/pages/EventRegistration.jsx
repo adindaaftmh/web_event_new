@@ -5,6 +5,7 @@ import TicketModal from '../components/TicketModal';
 import JigsawCaptcha from '../components/JigsawCaptcha';
 import PaymentButton from '../components/PaymentButton';
 import { kegiatanService, daftarHadirService } from '../services/apiService';
+import { getStorageUrl } from '../config/api';
 
 export default function EventRegistration() {
   const navigate = useNavigate();
@@ -555,7 +556,7 @@ export default function EventRegistration() {
         
         {/* Login Required Modal */}
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform animate-scale-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 lg:p-8 transform animate-scale-in mx-4">
             {/* Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
@@ -777,36 +778,29 @@ export default function EventRegistration() {
       <Navbar />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 mt-16 sm:mt-20 relative z-10">
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-[#4A7FA7] hover:text-[#0A1931] font-semibold transition-all duration-300 group mb-6"
+          className="flex items-center gap-2 text-[#4A7FA7] hover:text-[#0A1931] font-semibold transition-all duration-300 group mb-4 sm:mb-6 text-sm sm:text-base"
         >
-          <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Kembali
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column - Event Info & Ticket Selection */}
           <div className="lg:col-span-1 space-y-4 animate-slide-up" style={{animationDelay: '0.1s', animationFillMode: 'both'}}>
             {/* Event Card */}
-            <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/20 hover:shadow-2xl hover:scale-[1.02] transition-all duration-500">
+            <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 hover:shadow-2xl hover:scale-[1.02] transition-all duration-500">
               <h2 className="text-lg font-bold text-[#0A1931] mb-4">Informasi Event</h2>
               
               {(() => {
-                let flyerSrc = null;
-                if (eventData.flyer_url) {
-                  flyerSrc = eventData.flyer_url;
-                } else if (eventData.flyer_kegiatan) {
-                  if (eventData.flyer_kegiatan.startsWith('http://') || eventData.flyer_kegiatan.startsWith('https://')) {
-                    flyerSrc = eventData.flyer_kegiatan;
-                  } else {
-                    flyerSrc = `http://localhost:8000/storage/${eventData.flyer_kegiatan}`;
-                  }
-                }
+                // Backend sudah generate flyer_url via accessor
+                // flyer_url sudah handle: URL Cloudinary langsung atau url('storage/...')
+                const flyerSrc = eventData.flyer_url;
                 
                 return flyerSrc ? (
                   <div className="mb-4 rounded-xl overflow-hidden shadow-md">
@@ -815,18 +809,18 @@ export default function EventRegistration() {
                       alt={eventData.judul_kegiatan} 
                       className="w-full h-56 object-cover"
                       onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.parentElement.innerHTML = `
-                        <div class="mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20 h-56 flex items-center justify-center">
-                          <div class="text-center p-4">
-                            <svg class="w-16 h-16 text-[#4A7FA7] mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p class="text-[#4A7FA7] text-sm font-medium">Gagal Memuat Flyer</p>
+                        e.target.onerror = null;
+                        e.target.parentElement.innerHTML = `
+                          <div class="mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20 h-56 flex items-center justify-center">
+                            <div class="text-center p-4">
+                              <svg class="w-16 h-16 text-[#4A7FA7] mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <p class="text-[#4A7FA7] text-sm font-medium">Gagal Memuat Flyer</p>
+                            </div>
                           </div>
-                        </div>
-                      `;
-                    }}
+                        `;
+                      }}
                     />
                   </div>
                 ) : (
@@ -883,7 +877,7 @@ export default function EventRegistration() {
             </div>
 
             {/* Ticket Selection */}
-            <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/20 hover:shadow-2xl transition-all duration-500 animate-slide-up" style={{animationDelay: '0.2s', animationFillMode: 'both'}}>
+            <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 hover:shadow-2xl transition-all duration-500 animate-slide-up" style={{animationDelay: '0.2s', animationFillMode: 'both'}}>
               <h2 className="text-lg font-bold text-[#0A1931] mb-4">
                 Pilihan Tiket <span className="text-red-500">*</span>
               </h2>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { kegiatanService } from "../services/apiService";
-import apiClient from "../config/api";
+import apiClient, { getStorageUrl } from "../config/api";
 
 export default function EventDetail() {
   const navigate = useNavigate();
@@ -543,12 +543,12 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
       <Navbar />
 
       {/* Back Button */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-6 sm:pb-8">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-[#0A1931] hover:text-[#4A7FA7] font-bold transition-all duration-300 group"
+          className="flex items-center gap-2 text-[#0A1931] hover:text-[#4A7FA7] font-bold transition-all duration-300 group text-sm sm:text-base"
         >
-          <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Kembali
@@ -556,8 +556,8 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Left Column - Flyer and Event Info */}
           <div className="lg:col-span-1 space-y-4">
             {/* Flyer Image with Title - Larger Size */}
@@ -582,16 +582,9 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                 </div>
                 
                 {(() => {
-                  let flyerSrc = null;
-                  if (eventData.flyer_url) {
-                    flyerSrc = eventData.flyer_url;
-                  } else if (eventData.flyer_kegiatan) {
-                    if (eventData.flyer_kegiatan.startsWith('http://') || eventData.flyer_kegiatan.startsWith('https://')) {
-                      flyerSrc = eventData.flyer_kegiatan;
-                    } else {
-                      flyerSrc = `http://localhost:8000/storage/${eventData.flyer_kegiatan}`;
-                    }
-                  }
+                  // Backend sudah generate flyer_url via accessor, gunakan itu
+                  // flyer_url sudah handle: URL Cloudinary langsung atau url('storage/...')
+                  const flyerSrc = eventData.flyer_url;
                   
                   return flyerSrc ? (
                     <img
@@ -599,30 +592,39 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
                       alt={eventData.judul_kegiatan || eventData.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.parentElement.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20">
-                          <div class="text-center p-6">
-                            <svg class="w-20 h-20 text-[#4A7FA7] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p class="text-[#4A7FA7] font-medium">Gagal Memuat Flyer</p>
-                          </div>
-                        </div>
-                      `;
-                    }}
-                  />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20">
-                      <div className="text-center p-6">
-                        <svg className="w-20 h-20 text-[#4A7FA7] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-[#4A7FA7] font-medium">Flyer Tidak Tersedia</p>
-                      </div>
-                    </div>
-                  );
+                        // Prevent infinite loop
+                        e.target.onerror = null;
+                        // Hide broken image
+                        e.target.style.display = 'none';
+                        // Show placeholder
+                        const placeholder = e.target.parentElement.querySelector('.flyer-error-placeholder');
+                        if (placeholder) {
+                          placeholder.style.display = 'flex';
+                        }
+                      }}
+                    />
+                  ) : null;
                 })()}
+                {/* Error Placeholder - Hidden by default */}
+                <div className="flyer-error-placeholder absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20" style={{ display: 'none' }}>
+                  <div className="text-center p-6">
+                    <svg className="w-20 h-20 text-[#4A7FA7] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-[#4A7FA7] font-medium">Gagal Memuat Flyer</p>
+                  </div>
+                </div>
+                {/* Default Placeholder - Shown when no flyer */}
+                {!eventData.flyer_url && !eventData.flyer_kegiatan && (
+                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20">
+                    <div className="text-center p-6">
+                      <svg className="w-20 h-20 text-[#4A7FA7] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-[#4A7FA7] font-medium">Flyer Tidak Tersedia</p>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Event Title Overlay */}
@@ -635,11 +637,11 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
             </div>
 
             {/* Ticket Purchase Card */}
-            <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/20 hover-popup animate-fade-in-up animation-delay-200">
+            <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 hover-popup animate-fade-in-up animation-delay-200">
               {/* Price Info */}
-              <div className="text-center mb-6">
-                <p className="text-sm text-[#4A7FA7] font-medium mb-2">Harga Tiket Mulai Dari</p>
-                <p className="text-4xl font-bold text-[#0A1931] mb-1">
+              <div className="text-center mb-4 sm:mb-6">
+                <p className="text-xs sm:text-sm text-[#4A7FA7] font-medium mb-2">Harga Tiket Mulai Dari</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#0A1931] mb-1">
                   {(() => {
                     if (!eventData.tickets || !Array.isArray(eventData.tickets) || eventData.tickets.length === 0) {
                       return 'Rp 0';
@@ -688,7 +690,7 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
               {/* CTA Button */}
               <button
                 onClick={handleRegister}
-                className="w-full py-4 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-[#4A7FA7] to-[#1A3D63] text-white font-bold rounded-xl hover:from-[#4A7FA7]/80 hover:to-[#0A1931] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
@@ -718,7 +720,7 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
             </div>
 
             {/* Event Info Cards - 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-3 animate-fade-in-right animation-delay-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in-right animation-delay-300">
               {/* Date Card */}
               <div className="bg-[#F6FAFD]/90 backdrop-blur-xl rounded-2xl shadow-lg p-3 border border-white/20 hover-popup animate-gentle-bounce animation-delay-400">
                 <div className="flex items-center gap-3">
@@ -1002,22 +1004,29 @@ Program ini cocok untuk entrepreneur, marketing professional, dan siapa saja yan
               </svg>
             </button>
             {(() => {
-              let flyerSrc = null;
-              if (eventData.flyer_url) {
-                flyerSrc = eventData.flyer_url;
-              } else if (eventData.flyer_kegiatan) {
-                if (eventData.flyer_kegiatan.startsWith('http://') || eventData.flyer_kegiatan.startsWith('https://')) {
-                  flyerSrc = eventData.flyer_kegiatan;
-                } else {
-                  flyerSrc = `http://localhost:8000/storage/${eventData.flyer_kegiatan}`;
-                }
-              }
+              // Backend sudah generate flyer_url via accessor
+              const flyerSrc = eventData.flyer_url;
               
               return flyerSrc ? (
                 <img
                   src={flyerSrc}
                   alt={eventData.judul_kegiatan || eventData.name}
                   className="w-full h-auto rounded-2xl shadow-2xl"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'w-full h-64 flex items-center justify-center bg-gradient-to-br from-[#4A7FA7]/20 to-[#1A3D63]/20 rounded-2xl';
+                    errorDiv.innerHTML = `
+                      <div class="text-center p-6">
+                        <svg class="w-16 h-16 text-[#4A7FA7] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p class="text-[#4A7FA7] font-medium">Gagal Memuat Flyer</p>
+                      </div>
+                    `;
+                    e.target.parentElement.appendChild(errorDiv);
+                  }}
                 />
               ) : null;
             })()}

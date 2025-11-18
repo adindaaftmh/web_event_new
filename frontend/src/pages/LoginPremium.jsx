@@ -82,9 +82,9 @@ export default function Login() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md px-4">
         {/* Premium Glassmorphism Card */}
-        <div className="bg-gray-900/15 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl p-8 overflow-hidden">
+        <div className="bg-gray-900/15 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl p-6 sm:p-8 overflow-hidden">
           {/* Subtle inner glow effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-3xl" />
           

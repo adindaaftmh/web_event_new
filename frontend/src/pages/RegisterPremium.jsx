@@ -234,7 +234,7 @@ export default function Register() {
       {/* Error Modal Popup */}
       {showErrorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 transform transition-all animate-in zoom-in duration-200 mx-4">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
                 <svg className="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,9 +267,9 @@ export default function Register() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-lg">
+      <div className="relative z-10 w-full max-w-lg px-4">
         {/* Premium Glassmorphism Card */}
-        <div className="bg-gray-900/15 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl p-8 overflow-hidden">
+        <div className="bg-gray-900/15 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl p-6 sm:p-8 overflow-hidden">
           {/* Subtle inner glow effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-3xl" />
           
