@@ -19,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (file_exists(public_path('storage'))) {
+            unlink(public_path('storage'));
+        }
+
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
     }
 }
