@@ -6,6 +6,7 @@ use App\Models\RecommendedEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class RecommendedEventController extends Controller
 {
@@ -96,6 +97,7 @@ class RecommendedEventController extends Controller
             'buttonGradient' => 'nullable|string',
             'schoolText' => 'nullable|string',
             'flyerImage' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'flyerImageUrl' => 'nullable|url|max:1000',
             'active' => 'nullable|boolean',
             'order' => 'nullable|integer|min:1',
         ]);
@@ -109,8 +111,21 @@ class RecommendedEventController extends Controller
         }
 
         $flyerImagePath = null;
-        if ($request->hasFile('flyerImage')) {
-            $flyerImagePath = $request->file('flyerImage')->store('event-flyers', 'public');
+        if ($request->filled('flyerImageUrl')) {
+            $flyerImagePath = $request->input('flyerImageUrl');
+        } elseif ($request->hasFile('flyerImage')) {
+            try {
+                $uploaded = Cloudinary::upload(
+                    $request->file('flyerImage')->getRealPath(),
+                    [
+                        'folder' => 'homepage/recommended-events',
+                    ]
+                );
+
+                $flyerImagePath = $uploaded->getSecurePath();
+            } catch (\Exception $e) {
+                $flyerImagePath = $request->file('flyerImage')->store('event-flyers', 'public');
+            }
         }
 
         $event = RecommendedEvent::create([
@@ -220,6 +235,7 @@ class RecommendedEventController extends Controller
             'buttonGradient' => 'nullable|string',
             'schoolText' => 'nullable|string',
             'flyerImage' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'flyerImageUrl' => 'nullable|url|max:1000',
             'active' => 'nullable|boolean',
             'order' => 'nullable|integer|min:1',
         ]);
@@ -233,14 +249,32 @@ class RecommendedEventController extends Controller
         }
 
         // Update flyer image if new one is uploaded
-        if ($request->hasFile('flyerImage')) {
+        if ($request->filled('flyerImageUrl')) {
             // Delete old image
             if ($event->flyer_image_path && !filter_var($event->flyer_image_path, FILTER_VALIDATE_URL)) {
                 Storage::disk('public')->delete($event->flyer_image_path);
             }
-            
-            $flyerImagePath = $request->file('flyerImage')->store('event-flyers', 'public');
-            $event->flyer_image_path = $flyerImagePath;
+
+            $event->flyer_image_path = $request->input('flyerImageUrl');
+        } elseif ($request->hasFile('flyerImage')) {
+            // Delete old image
+            if ($event->flyer_image_path && !filter_var($event->flyer_image_path, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($event->flyer_image_path);
+            }
+
+            try {
+                $uploaded = Cloudinary::upload(
+                    $request->file('flyerImage')->getRealPath(),
+                    [
+                        'folder' => 'homepage/recommended-events',
+                    ]
+                );
+
+                $event->flyer_image_path = $uploaded->getSecurePath();
+            } catch (\Exception $e) {
+                $flyerImagePath = $request->file('flyerImage')->store('event-flyers', 'public');
+                $event->flyer_image_path = $flyerImagePath;
+            }
         }
 
         // Update other fields
