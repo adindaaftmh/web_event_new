@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Providers;
-
+ 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\File;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,10 +20,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (file_exists(public_path('storage'))) {
-            unlink(public_path('storage'));
+        $publicStorage = public_path('storage');
+
+        // Jika sudah ada folder atau linknya, hapus dulu
+        if (is_link($publicStorage) || is_dir($publicStorage)) {
+            File::deleteDirectory($publicStorage);
         }
 
+        // Buat ulang storage link
         \Illuminate\Support\Facades\Artisan::call('storage:link');
     }
 }
