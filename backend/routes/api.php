@@ -14,6 +14,7 @@
         use App\Http\Controllers\ContactMessageController;
         use App\Http\Controllers\PaymentController;
         use App\Http\Controllers\ImageUploadController;
+use App\Http\Controllers\FooterController;
 
 
 
@@ -103,6 +104,9 @@
             Route::delete('recommended-events/{id}', [RecommendedEventController::class, 'destroy']);
             Route::patch('recommended-events/{id}/toggle-active', [RecommendedEventController::class, 'toggleActive']);
         });
+        // Footer (public)
+        Route::get('/footer', [FooterController::class, 'show']);
+
         // Contact Messages
         Route::post('/contact-messages', [ContactMessageController::class, 'store']);
         
@@ -134,10 +138,14 @@
         });
 
         Route::middleware('auth:sanctum')->group(function () {
+            // Contact Messages (Admin)
             Route::get('/contact-messages', [ContactMessageController::class, 'index']);
             Route::put('/contact-messages/{id}/read', [ContactMessageController::class, 'markAsRead']);
             Route::post('/contact-messages/{id}/reply', [ContactMessageController::class, 'sendReply']);
             Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
+
+            // Footer (Admin)
+            Route::put('/footer', [FooterController::class, 'update']);
         });
 
         // Payment Gateway Xendit

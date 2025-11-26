@@ -4,6 +4,7 @@ import { EventProvider } from './contexts/EventContext';
 import { SidebarProvider } from './contexts/SidebarContext';
 import { RecommendedEventsProvider } from './contexts/RecommendedEventsContext';
 import { InterestingFactsProvider } from './contexts/InterestingFactsContext';
+import { FooterProvider } from './contexts/FooterContext';
 import SmoothNavigation from './components/SmoothNavigation';
 import IdleTimeoutHandler from './components/IdleTimeoutHandler';
 
@@ -34,6 +35,7 @@ import ListAccounts from './pages/admin/ListAccounts.jsx';
 import UpdateFlyer from './pages/admin/UpdateFlyer.jsx';
 import UpdateRecommendedEvents from './pages/admin/UpdateRecommendedEventsNew.jsx';
 import UpdateInterestingFacts from './pages/admin/UpdateInterestingFacts.jsx';
+import UpdateFooter from './pages/admin/UpdateFooter.jsx';
 import MonthlyActivityReport from './pages/admin/MonthlyActivityReport.jsx';
 import EventParticipantRecap from './pages/admin/EventParticipantRecap.jsx';
 import Messages from './pages/admin/Messages.jsx';
@@ -46,7 +48,8 @@ export default function App() {
       <RecommendedEventsProvider>
         <InterestingFactsProvider>
           <SidebarProvider>
-            <Router>
+            <FooterProvider>
+              <Router>
               <SmoothNavigation />
               <IdleTimeoutHandler />
               <Routes>
@@ -93,6 +96,7 @@ export default function App() {
             <Route path="/admin/settings/flyer" element={<UpdateFlyer />} />
             <Route path="/admin/settings/recommended" element={<UpdateRecommendedEvents />} />
             <Route path="/admin/settings/facts" element={<UpdateInterestingFacts />} />
+            <Route path="/admin/settings/footer" element={<UpdateFooter />} />
 
             {/* Reports */}
             <Route path="/admin/reports/monthly" element={<MonthlyActivityReport />} />
@@ -101,7 +105,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Router>
-        </SidebarProvider>
+            </FooterProvider>
+          </SidebarProvider>
         </InterestingFactsProvider>
       </RecommendedEventsProvider>
     </EventProvider>
